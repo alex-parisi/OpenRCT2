@@ -45,6 +45,8 @@ extern u8string gCustomRCT2DataPath;
 extern u8string gCustomPassword;
 extern bool gOpenRCT2Headless;
 extern bool gOpenRCT2NoGraphics;
+// When running headless, end the game loop after this many game ticks. 0 means run indefinitely.
+extern uint32_t gOpenRCT2MaxTicks;
 extern bool gOpenRCT2ShowChangelog;
 extern bool gOpenRCT2SilentBreakpad;
 extern u8string gSilentRecordingName;

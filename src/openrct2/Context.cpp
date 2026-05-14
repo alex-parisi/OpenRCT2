@@ -84,6 +84,7 @@
 #include <future>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <string>
 
 using namespace OpenRCT2;
@@ -150,6 +151,12 @@ namespace OpenRCT2
         // If set, will end the OpenRCT2 game loop. Intentionally private to this module so that the flag can not be set back to
         // false.
         bool _finished = false;
+
+        // Process exit code, returned by RunOpenRCT2. Set to EXIT_FAILURE if a headless run ends abnormally (e.g. a desync).
+        int32_t _exitCode = EXIT_SUCCESS;
+
+        // The value of GameState::currentTicks when the game scene first became active, used to honour gOpenRCT2MaxTicks.
+        std::optional<uint32_t> _ticksStart;
 
         std::future<void> _versionCheckFuture;
         NewVersionInfo _newVersionInfo;
@@ -315,7 +322,7 @@ namespace OpenRCT2
             if (Initialise())
             {
                 Launch();
-                return EXIT_SUCCESS;
+                return _exitCode;
             }
             return EXIT_FAILURE;
         }
@@ -1335,6 +1342,41 @@ namespace OpenRCT2
             }
 
             Network::Flush();
+
+            CheckHeadlessExit();
+        }
+
+        /**
+         * In headless mode, ends the game loop when the configured tick limit (--ticks) is reached, or immediately if a
+         * network desync is detected. Has no effect when running with a UI.
+         */
+        void CheckHeadlessExit()
+        {
+            if (!gOpenRCT2Headless)
+                return;
+
+#ifndef DISABLE_NETWORK
+            if (_network.GetMode() == Network::Mode::client && _network.IsDesynchronised())
+            {
+                LOG_ERROR("Network desync detected; exiting.");
+                _exitCode = EXIT_FAILURE;
+                Finish();
+                return;
+            }
+#endif
+
+            if (gOpenRCT2MaxTicks != 0 && _activeScene == _gameScene.get())
+            {
+                const auto currentTicks = getGameState().currentTicks;
+                if (!_ticksStart.has_value())
+                    _ticksStart = currentTicks;
+
+                if (currentTicks - *_ticksStart >= gOpenRCT2MaxTicks)
+                {
+                    LOG_INFO("Reached configured tick limit of %u; exiting.", gOpenRCT2MaxTicks);
+                    Finish();
+                }
+            }
         }
 
         void UpdateTimeAccumulators(float deltaTime)

@@ -22,6 +22,7 @@ u8string gSilentRecordingName = {};
 
 bool gOpenRCT2Headless = false;
 bool gOpenRCT2NoGraphics = false;
+uint32_t gOpenRCT2MaxTicks = 0;
 
 bool gOpenRCT2ShowChangelog;
 bool gOpenRCT2SilentBreakpad;

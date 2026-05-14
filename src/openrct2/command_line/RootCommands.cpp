@@ -56,6 +56,7 @@ namespace OpenRCT2
     static bool _verbose = false;
     static bool _headless = false;
     static bool _silentReplays = false;
+    static uint32_t _ticks = 0;
     static u8string _password = {};
     static u8string _userDataPath = {};
     static u8string _openrct2DataPath = {};
@@ -74,6 +75,7 @@ namespace OpenRCT2
         { CMDLINE_TYPE_SWITCH,  &_verbose,          kNAC, "verbose",            "log verbose messages"                                       },
         { CMDLINE_TYPE_SWITCH,  &_headless,         kNAC, "headless",           "run " OPENRCT2_NAME " headless" IMPLIES_SILENT_BREAKPAD     },
         { CMDLINE_TYPE_SWITCH,  &_silentReplays,    kNAC, "silent-replays",     "use unobtrusive replays"                                    },
+        { CMDLINE_TYPE_INTEGER, &_ticks,            kNAC, "ticks",              "when headless, exit after simulating this many game ticks"  },
     #ifndef DISABLE_NETWORK
         { CMDLINE_TYPE_INTEGER, &_port,             kNAC, "port",               "port to use for hosting or joining a server"                },
         { CMDLINE_TYPE_STRING,  &_address,          kNAC, "address",            "address to listen on when hosting a server"                 },
@@ -230,6 +232,8 @@ namespace OpenRCT2
         {
             gSilentReplays = _silentReplays;
         }
+
+        gOpenRCT2MaxTicks = _ticks;
 
         return result;
     }
