@@ -46,6 +46,7 @@ set(test_files
    "${CMAKE_CURRENT_SOURCE_DIR}/tests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/TileElements.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/TileElementsView.cpp"
+   "${CMAKE_CURRENT_SOURCE_DIR}/UnitConversionTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/UtilTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/WidgetStateTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/ZoomLevelTests.cpp")
