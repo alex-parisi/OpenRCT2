@@ -40,6 +40,7 @@ set(test_files
    "${CMAKE_CURRENT_SOURCE_DIR}/ScriptingTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/ShopItemTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/StringTest.cpp"
+   "${CMAKE_CURRENT_SOURCE_DIR}/SurfaceDataTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/TestData.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/TestData.h"
    "${CMAKE_CURRENT_SOURCE_DIR}/tests.cpp"
