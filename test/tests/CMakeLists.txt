@@ -9,6 +9,7 @@ install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E create_symlink \"\
 set(test_files
    "${CMAKE_CURRENT_SOURCE_DIR}/AssertHelpers.hpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/BitSetTests.cpp"
+   "${CMAKE_CURRENT_SOURCE_DIR}/CheatActionTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/CircularBuffer.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/CLITests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/CryptTests.cpp"
@@ -47,7 +48,14 @@ add_executable(OpenRCT2::OpenRCT2Tests ALIAS OpenRCT2Tests)
 target_link_libraries(OpenRCT2Tests GTest::gtest GTest::gtest_main libopenrct2)
 target_include_directories(OpenRCT2Tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../src")
 set_target_properties(OpenRCT2Tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+# CheatActionTests is excluded from discovery and registered as a single ctest entry since it uses
+# SetUpTestSuite to share an expensive park load across many tests.
 gtest_discover_tests(OpenRCT2Tests
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    DISCOVERY_MODE PRE_TEST)
+    DISCOVERY_MODE PRE_TEST
+    TEST_FILTER -CheatActionTests.*)
+
+add_test(NAME CheatActionTests
+    COMMAND OpenRCT2Tests --gtest_filter=CheatActionTests.*
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
