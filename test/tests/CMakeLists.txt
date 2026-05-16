@@ -24,6 +24,7 @@ set(test_files
    "${CMAKE_CURRENT_SOURCE_DIR}/ImageImporterTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/IniReaderTest.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/IniWriterTest.cpp"
+   "${CMAKE_CURRENT_SOURCE_DIR}/InvalidationGridTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/IStreamTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/LanguagePackTest.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/LocalisationTest.cpp"
