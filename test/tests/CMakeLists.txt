@@ -57,6 +57,7 @@ set(test_files
    "${CMAKE_CURRENT_SOURCE_DIR}/UnitConversionTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/UtilTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/WidgetStateTests.cpp"
+   "${CMAKE_CURRENT_SOURCE_DIR}/YawTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/ZoomLevelTests.cpp")
 
 add_executable(OpenRCT2Tests ${test_files})
