@@ -42,6 +42,7 @@ set(test_files
    "${CMAKE_CURRENT_SOURCE_DIR}/S6ImportExportTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/SawyerCodingTest.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/ScenarioPatcherTests.cpp"
+   "${CMAKE_CURRENT_SOURCE_DIR}/SegmentTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/ScriptingTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/ShopItemTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/StringTest.cpp"
