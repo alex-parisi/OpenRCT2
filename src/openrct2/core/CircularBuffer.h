@@ -11,6 +11,8 @@
 
 #include <array>
 #include <cstddef>
+#include <type_traits>
+#include <utility>
 
 template<typename TType, size_t TMax>
 class CircularBuffer
@@ -78,60 +80,23 @@ public:
         return _elements.size();
     }
 
-    void push_back(const value_type& val)
+    template<typename U>
+        requires std::convertible_to<U, value_type>
+    void push_back(U&& val)
     {
         if (_size == 0)
         {
-            _elements[_head] = val;
             _tail = _head;
-            _size++;
-        }
-        else if (_size != capacity())
-        {
-            _tail++;
-            if (_tail == capacity())
-                _tail = 0;
-            _size++;
-            _elements[_tail] = val;
         }
         else
         {
-            _head++;
-            if (_head == capacity())
-                _head = 0;
-            _tail++;
-            if (_tail == capacity())
-                _tail = 0;
-            _elements[_tail] = val;
+            _tail = (_tail + 1) % capacity();
+            if (_size == capacity())
+                _head = (_head + 1) % capacity();
         }
-    }
-
-    void push_back(value_type&& val)
-    {
-        if (_size == 0)
-        {
-            _elements[_head] = std::move(val);
-            _tail = _head;
+        _elements[_tail] = std::forward<U>(val);
+        if (_size < capacity())
             _size++;
-        }
-        else if (_size != capacity())
-        {
-            _tail++;
-            if (_tail == capacity())
-                _tail = 0;
-            _size++;
-            _elements[_tail] = std::move(val);
-        }
-        else
-        {
-            _head++;
-            if (_head == capacity())
-                _head = 0;
-            _tail++;
-            if (_tail == capacity())
-                _tail = 0;
-            _elements[_tail] = std::move(val);
-        }
     }
 
 private:
