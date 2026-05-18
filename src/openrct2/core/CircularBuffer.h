@@ -11,7 +11,7 @@
 
 #include <array>
 #include <cstddef>
-#include <type_traits>
+#include <concepts>
 #include <utility>
 
 template<typename TType, size_t TMax>
