@@ -38,6 +38,7 @@
 #include "../object/ObjectManager.h"
 #include "../object/SmallSceneryEntry.h"
 #include "../object/TerrainSurfaceObject.h"
+#include "../peep/GuestPathfinding.h"
 #include "../profiling/Profiling.h"
 #include "../ride/RideConstruction.h"
 #include "../ride/RideData.h"
@@ -993,6 +994,9 @@ namespace OpenRCT2
      */
     void TileElementRemove(TileElement* tileElement)
     {
+        // The tile layout is changing; invalidate any cached A* routes.
+        PathFinding::NotifyPathLayoutChanged();
+
         // Replace Nth element by (N+1)th element.
         // This loop will make tileElement point to the old last element position,
         // after copy it to it's new position
@@ -1112,6 +1116,9 @@ namespace OpenRCT2
      */
     TileElement* TileElementInsert(const CoordsXYZ& loc, int32_t occupiedQuadrants, TileElementType type)
     {
+        // The tile layout is changing; invalidate any cached A* routes.
+        PathFinding::NotifyPathLayoutChanged();
+
         const auto& tileLoc = TileCoordsXYZ(loc);
 
         auto numElementsOnTileOld = CountElementsOnTile(loc);

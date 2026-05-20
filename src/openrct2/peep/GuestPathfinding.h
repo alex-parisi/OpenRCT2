@@ -34,4 +34,12 @@ namespace OpenRCT2::PathFinding
 
     int32_t GuestPathFindParkEntranceLeaving(Peep& peep, uint8_t edges);
 
+    /**
+     * Invalidates cached A* routes by bumping the path-layout generation. Called
+     * whenever the tile layout changes so cached routes are recomputed against the
+     * current map. Cheap (an integer increment); only relevant when A* pathfinding is
+     * enabled, harmless otherwise.
+     */
+    void NotifyPathLayoutChanged();
+
 } // namespace OpenRCT2::PathFinding

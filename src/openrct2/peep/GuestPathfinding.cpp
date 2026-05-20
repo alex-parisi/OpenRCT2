@@ -11,6 +11,7 @@
 
 #include "../Diagnostic.h"
 #include "../GameState.h"
+#include "../config/Config.h"
 #include "../core/Guard.hpp"
 #include "../entity/Guest.h"
 #include "../entity/Staff.h"
@@ -32,6 +33,11 @@
 #include <bitset>
 #include <cassert>
 #include <cstring>
+#include <optional>
+#include <queue>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace OpenRCT2::PathFinding
 {
@@ -1223,6 +1229,386 @@ namespace OpenRCT2::PathFinding
         }
     }
 
+#pragma region A* pathfinding (optional, gated by Config::general.useAStarPathfinding)
+
+    /* Whole-search node-expansion budget. The A* path search is an undirected
+     * Dijkstra from the goal (see ComputeDistanceField), so it needs a larger budget
+     * than the directed heuristic search to reach the same distances; this is afforded
+     * because the result is cached and amortised over many tiles (see _pathCache). */
+    static constexpr int32_t kAStarMaxNodesGuest = 30000;
+    static constexpr int32_t kAStarMaxNodesStaff = 80000;
+
+    /* Maximum number of tiles stored per cached route. When a guest walks past the end
+     * of a stored route the path is recomputed from the current tile (deterministically,
+     * so the continuation is identical on every client). */
+    static constexpr size_t kAStarMaxCachedRouteLen = 256;
+
+    /* Bumped whenever the tile layout changes (NotifyPathLayoutChanged, called from
+     * TileElementInsert/Remove). Cached routes record the generation they were computed
+     * for; a mismatch forces a recompute against the current map. This is the
+     * invalidation mechanism that keeps cached routes consistent with map edits - and,
+     * crucially, identical between a client with a warm cache and one that recomputes
+     * from cold (e.g. a mid-game join or a replay from a savepoint). */
+    static uint32_t _pathLayoutGeneration = 0;
+
+    struct AStarTileHasher
+    {
+        std::size_t operator()(const TileCoordsXYZ& c) const
+        {
+            return static_cast<std::size_t>(static_cast<uint16_t>(c.x))
+                | (static_cast<std::size_t>(static_cast<uint16_t>(c.y)) << 16)
+                | (static_cast<std::size_t>(static_cast<uint8_t>(c.z)) << 32);
+        }
+    };
+
+    struct DijkstraNode
+    {
+        int32_t dist = 0; // shortest walking distance from this tile to the goal
+        bool closed = false;
+    };
+
+    using DistanceField = std::unordered_map<TileCoordsXYZ, DijkstraNode, AStarTileHasher>;
+
+    void NotifyPathLayoutChanged()
+    {
+        _pathLayoutGeneration++;
+    }
+
+    /**
+     * Returns the walkable path tile reachable from `loc` (a path tile) by stepping
+     * in `direction`, or std::nullopt if there is no connected path tile that way.
+     * Mirrors FootpathElementNextInDirection's slope/validity handling. Foreign ride
+     * queues are not traversable when ignoreForeignQueues is set (unless the tile is
+     * the goal itself), matching the heuristic search's queue rules.
+     */
+    static std::optional<TileCoordsXYZ> AStarStep(
+        TileCoordsXYZ loc, const PathElement& pathElement, Direction direction, bool ignoreForeignQueues, RideId queueRideIndex,
+        const TileCoordsXYZ& goal)
+    {
+        if (pathElement.IsSloped() && pathElement.GetSlopeDirection() == direction)
+            loc.z += 2;
+
+        loc += TileDirectionDelta[direction];
+
+        TileElement* tileElement = MapGetFirstElementAt(loc);
+        if (tileElement == nullptr)
+            return std::nullopt;
+
+        do
+        {
+            if (tileElement->isGhost())
+                continue;
+            if (tileElement->getType() != TileElementType::Path)
+                continue;
+
+            const auto* nextPathElement = tileElement->asPath();
+            if (!FootpathIsZAndDirectionValid(*nextPathElement, loc.z, direction))
+                continue;
+
+            TileCoordsXYZ neighbour{ loc.x, loc.y, tileElement->baseHeight };
+
+            // Don't allow cutting through a different ride's queue.
+            if (ignoreForeignQueues && nextPathElement->IsQueue() && !nextPathElement->GetRideIndex().IsNull()
+                && nextPathElement->GetRideIndex() != queueRideIndex && neighbour != goal)
+            {
+                return std::nullopt;
+            }
+
+            return neighbour;
+        } while (!(tileElement++)->isLastForTile());
+
+        return std::nullopt;
+    }
+
+    /**
+     * Visits every walkable neighbour of `loc`, calling visit(direction, neighbour).
+     * This is the single definition of the path graph's adjacency, shared by the
+     * distance-field search and the route descent so they cannot disagree.
+     *
+     * When `patrolMechanic` is non-null the graph is restricted to that mechanic's
+     * patrol area (and to owned land), reproducing the classic search's behaviour that
+     * mechanics do not path outside their patrol. The goal tile is always allowed so a
+     * mechanic can still reach a ride entrance sitting on the patrol boundary.
+     */
+    template<typename TVisitor>
+    static void ForEachWalkableNeighbour(
+        const TileCoordsXYZ& loc, bool isStaff, bool ignoreForeignQueues, RideId queueRideIndex, const TileCoordsXYZ& goal,
+        const Staff* patrolMechanic, TVisitor&& visit)
+    {
+        TileElement* tileElement = MapGetFirstElementAt(loc);
+        if (tileElement == nullptr)
+            return;
+
+        do
+        {
+            if (tileElement->isGhost())
+                continue;
+            if (tileElement->getType() != TileElementType::Path)
+                continue;
+            if (tileElement->baseHeight != loc.z)
+                continue;
+
+            const auto* pathElement = tileElement->asPath();
+            uint8_t edges = PathGetPermittedEdges(isStaff, pathElement) & 0xF;
+
+            for (Direction direction : kAllDirections)
+            {
+                if (!(edges & (1 << direction)))
+                    continue;
+
+                auto neighbour = AStarStep(loc, *pathElement, direction, ignoreForeignQueues, queueRideIndex, goal);
+                if (!neighbour.has_value())
+                    continue;
+
+                // Mechanics may not path outside their patrol area (the goal is exempt).
+                if (patrolMechanic != nullptr && *neighbour != goal
+                    && !patrolMechanic->IsLocationInPatrol(neighbour->ToCoordsXY()))
+                {
+                    continue;
+                }
+
+                visit(direction, *neighbour);
+            }
+        } while (!(tileElement++)->isLastForTile());
+    }
+
+    /**
+     * Computes the shortest walking distance to `goal` for tiles around it, via an
+     * undirected Dijkstra search starting at the goal, stopping once `loc` is settled.
+     *
+     * Dijkstra (rather than a directed A*) is deliberate: it closes EVERY tile whose
+     * distance is <= dist(loc), so the set of tiles available to the route descent is
+     * complete and independent of the search's start. Combined with the canonical
+     * descent in DescendRoute, this guarantees the route from any tile is a pure
+     * function of (tile, goal, map) - which is what makes a transient (non-serialised)
+     * cache safe for multiplayer and replays.
+     *
+     * Returns true and fills `dist` if `goal` is reachable from `loc` within the budget.
+     */
+    static bool ComputeDistanceField(
+        const TileCoordsXYZ& goal, const TileCoordsXYZ& loc, bool isStaff, bool ignoreForeignQueues, RideId queueRideIndex,
+        const Staff* patrolMechanic, int32_t maxNodes, DistanceField& dist)
+    {
+        struct OpenEntry
+        {
+            int32_t dist;
+            uint32_t order; // tie-break only; does not affect the final distances
+            TileCoordsXYZ coords;
+        };
+        struct OpenCompare
+        {
+            bool operator()(const OpenEntry& a, const OpenEntry& b) const
+            {
+                if (a.dist != b.dist)
+                    return a.dist > b.dist;
+                return a.order > b.order;
+            }
+        };
+
+        std::priority_queue<OpenEntry, std::vector<OpenEntry>, OpenCompare> open;
+
+        uint32_t order = 0;
+        dist[goal] = DijkstraNode{ 0, false };
+        open.push({ 0, order++, goal });
+
+        int32_t closedCount = 0;
+        while (!open.empty())
+        {
+            const OpenEntry current = open.top();
+            open.pop();
+
+            auto currentIt = dist.find(current.coords);
+            if (currentIt == dist.end() || currentIt->second.closed)
+                continue; // stale duplicate heap entry
+            currentIt->second.closed = true;
+            const int32_t currentDist = currentIt->second.dist;
+
+            // `loc` is settled: every tile on a shortest route from loc to goal has a
+            // smaller distance and has therefore already been closed.
+            if (current.coords == loc)
+                return true;
+
+            if (++closedCount > maxNodes)
+                return false;
+
+            ForEachWalkableNeighbour(
+                current.coords, isStaff, ignoreForeignQueues, queueRideIndex, goal, patrolMechanic,
+                [&](Direction, const TileCoordsXYZ& neighbour) {
+                    const int32_t tentative = currentDist + 1;
+                    auto it = dist.find(neighbour);
+                    if (it == dist.end())
+                    {
+                        dist[neighbour] = DijkstraNode{ tentative, false };
+                        open.push({ tentative, order++, neighbour });
+                    }
+                    else if (!it->second.closed && tentative < it->second.dist)
+                    {
+                        it->second.dist = tentative;
+                        open.push({ tentative, order++, neighbour });
+                    }
+                });
+        }
+
+        return false;
+    }
+
+    /**
+     * Builds the canonical shortest route from `loc` to `goal` by greedily descending
+     * the distance field: at each tile, step to the neighbour with distance dist-1,
+     * breaking ties by the lowest direction index. Because this depends only on the
+     * (start-independent) distance values and a fixed tie-break, the suffix of a route
+     * computed from an earlier tile equals a route recomputed from a later tile.
+     */
+    static std::vector<TileCoordsXYZ> DescendRoute(
+        const TileCoordsXYZ& loc, const TileCoordsXYZ& goal, bool isStaff, bool ignoreForeignQueues, RideId queueRideIndex,
+        const Staff* patrolMechanic, const DistanceField& dist, size_t maxLen)
+    {
+        std::vector<TileCoordsXYZ> route;
+        route.push_back(loc);
+
+        TileCoordsXYZ current = loc;
+        while (current != goal && route.size() < maxLen)
+        {
+            auto currentIt = dist.find(current);
+            if (currentIt == dist.end() || !currentIt->second.closed)
+                break;
+            const int32_t target = currentIt->second.dist - 1;
+
+            Direction bestDir = kInvalidDirection;
+            TileCoordsXYZ bestNext{};
+            ForEachWalkableNeighbour(
+                current, isStaff, ignoreForeignQueues, queueRideIndex, goal, patrolMechanic,
+                [&](Direction direction, const TileCoordsXYZ& neighbour) {
+                    auto it = dist.find(neighbour);
+                    if (it == dist.end() || !it->second.closed || it->second.dist != target)
+                        return;
+                    if (bestDir == kInvalidDirection || direction < bestDir)
+                    {
+                        bestDir = direction;
+                        bestNext = neighbour;
+                    }
+                });
+
+            if (bestDir == kInvalidDirection)
+                break; // no descending step (should not happen for a settled tile)
+
+            route.push_back(bestNext);
+            current = bestNext;
+        }
+
+        return route;
+    }
+
+    /* Per-guest cache of the canonical route, keyed by entity id. Transient (not
+     * serialised): a cache hit is provably equal to a cold recompute, so divergence
+     * between clients is impossible despite the cache not being part of saved state. */
+    struct PathCacheEntry
+    {
+        uint32_t generation = 0;
+        TileCoordsXYZ goal{};
+        std::vector<TileCoordsXYZ> route;
+        size_t index = 0; // route[index] is the tile the guest is expected to be on
+    };
+    static std::unordered_map<uint32_t, PathCacheEntry> _pathCache;
+
+    static Direction DirectionBetween(const TileCoordsXYZ& from, const TileCoordsXYZ& to)
+    {
+        const int32_t dx = to.x - from.x;
+        const int32_t dy = to.y - from.y;
+        for (Direction direction : kAllDirections)
+        {
+            if (TileDirectionDelta[direction].x == dx && TileDirectionDelta[direction].y == dy)
+                return direction;
+        }
+        return kInvalidDirection;
+    }
+
+    /**
+     * Deterministic A* alternative to the recursive heuristic search. Returns the
+     * direction of the next step from `loc` towards `goal` (or kInvalidDirection if no
+     * route is found within the budget).
+     *
+     * Guest routes are cached and reused while the guest follows them and the map is
+     * unchanged. A cache miss recomputes the same canonical route, so the choice is a
+     * pure function of (loc, goal, map) regardless of cache state - preserving
+     * multiplayer and replay determinism without serialising the cache.
+     *
+     * Mechanic routes are NOT cached: their walkable graph also depends on the patrol
+     * area and land ownership, which can change without bumping _pathLayoutGeneration.
+     * Recomputing every call keeps mechanics deterministic and correct, and is cheap
+     * because there are few mechanics compared to guests.
+     */
+    static Direction AStarChooseDirection(
+        const TileCoordsXYZ& loc, const TileCoordsXYZ& goal, Peep& peep, bool ignoreForeignQueues, RideId queueRideIndex)
+    {
+        PROFILED_FUNCTION();
+
+        const uint32_t key = peep.id.ToUnderlying();
+        auto* staff = peep.as<Staff>();
+        const bool isStaff = staff != nullptr;
+        // Mechanics are restricted to their patrol area; other peeps roam freely.
+        const Staff* patrolMechanic = (staff != nullptr && staff->IsMechanic()) ? staff : nullptr;
+        const bool useCache = patrolMechanic == nullptr;
+
+        // 1. Cache hit: follow the precomputed canonical route.
+        if (useCache)
+        {
+            auto cacheIt = _pathCache.find(key);
+            if (cacheIt != _pathCache.end())
+            {
+                PathCacheEntry& entry = cacheIt->second;
+                if (entry.generation == _pathLayoutGeneration && entry.goal == goal && entry.index + 1 < entry.route.size()
+                    && entry.route[entry.index] == loc)
+                {
+                    const Direction dir = DirectionBetween(entry.route[entry.index], entry.route[entry.index + 1]);
+                    entry.index++;
+                    if (dir != kInvalidDirection)
+                        return dir;
+                }
+            }
+        }
+
+        // 2. Cache miss / invalidated / mechanic: recompute the distance field and canonical route.
+        const int32_t maxNodes = isStaff ? kAStarMaxNodesStaff : kAStarMaxNodesGuest;
+
+        DistanceField dist;
+        if (!ComputeDistanceField(goal, loc, isStaff, ignoreForeignQueues, queueRideIndex, patrolMechanic, maxNodes, dist))
+        {
+            if (useCache)
+                _pathCache.erase(key);
+            return kInvalidDirection;
+        }
+
+        std::vector<TileCoordsXYZ> route = DescendRoute(
+            loc, goal, isStaff, ignoreForeignQueues, queueRideIndex, patrolMechanic, dist, kAStarMaxCachedRouteLen);
+        if (route.size() < 2)
+        {
+            if (useCache)
+                _pathCache.erase(key);
+            return kInvalidDirection;
+        }
+
+        const Direction dir = DirectionBetween(route[0], route[1]);
+        if (dir == kInvalidDirection)
+        {
+            if (useCache)
+                _pathCache.erase(key);
+            return kInvalidDirection;
+        }
+
+        if (useCache)
+        {
+            PathCacheEntry& entry = _pathCache[key];
+            entry.generation = _pathLayoutGeneration;
+            entry.goal = goal;
+            entry.route = std::move(route);
+            entry.index = 1; // route[0] -> route[1] is being returned now
+        }
+        return dir;
+    }
+
+#pragma endregion
+
     /**
      * Returns:
      *   -1   - no direction chosen
@@ -1233,6 +1619,9 @@ namespace OpenRCT2::PathFinding
     Direction ChooseDirection(
         const TileCoordsXYZ& loc, const TileCoordsXYZ& goal, Peep& peep, bool ignoreForeignQueues, RideId queueRideIndex)
     {
+        if (Config::Get().general.useAStarPathfinding)
+            return AStarChooseDirection(loc, goal, peep, ignoreForeignQueues, queueRideIndex);
+
         PROFILED_FUNCTION();
 
         PathFindingState state{};

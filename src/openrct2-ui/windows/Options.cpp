@@ -255,6 +255,7 @@ namespace OpenRCT2::Ui::Windows
         WIDX_GROUP_ADVANCED,
         WIDX_DEBUGGING_TOOLS,
         WIDX_STAY_CONNECTED_AFTER_DESYNC,
+        WIDX_USE_ASTAR_PATHFINDING,
 #ifdef __EMSCRIPTEN__
         WIDX_EXPORT_EMSCRIPTEN_DATA,
         WIDX_IMPORT_EMSCRIPTEN_DATA,
@@ -461,14 +462,15 @@ namespace OpenRCT2::Ui::Windows
         makeWidget        ({ 23, kSavingStart + 63}, {135, 12}, WidgetType::label,        WindowColour::secondary, STR_AUTOSAVE_AMOUNT,                       STR_AUTOSAVE_AMOUNT_TIP                      ),
         makeSpinnerWidgets({165, kSavingStart + 62}, {135, 14}, WidgetType::spinner,      WindowColour::secondary, kStringIdNone,                             STR_AUTOSAVE_AMOUNT_TIP                      ), // Autosave amount spinner
 
-        makeWidget        ({  5, kAdvancedStart +  0}, {300, 97}, WidgetType::groupbox,     WindowColour::secondary, STR_GROUP_ADVANCED                                                                      ),
+        makeWidget        ({  5, kAdvancedStart +  0}, {300, 111}, WidgetType::groupbox,    WindowColour::secondary, STR_GROUP_ADVANCED                                                                      ),
         makeWidget        ({ 10, kAdvancedStart + 16}, {295, 12}, WidgetType::checkbox,     WindowColour::tertiary,  STR_ENABLE_DEBUGGING_TOOLS,                STR_ENABLE_DEBUGGING_TOOLS_TIP               ), // Enable debugging tools
         makeWidget        ({ 10, kAdvancedStart + 30}, {295, 12}, WidgetType::checkbox,     WindowColour::tertiary,  STR_STAY_CONNECTED_AFTER_DESYNC,           STR_STAY_CONNECTED_AFTER_DESYNC_TIP          ), // Do not disconnect after the client desynchronises with the server
+        makeWidget        ({ 10, kAdvancedStart + 44}, {295, 12}, WidgetType::checkbox,     WindowColour::tertiary,  STR_USE_ASTAR_PATHFINDING,                 STR_USE_ASTAR_PATHFINDING_TIP                ), // Use A* pathfinding
 #ifdef __EMSCRIPTEN__
-        makeWidget        ({ 10, kAdvancedStart + 46}, {135, 14}, WidgetType::button,       WindowColour::secondary, STR_EXPORT_EMSCRIPTEN,                     kStringIdNone                                ), // Emscripten data export
-        makeWidget        ({150, kAdvancedStart + 46}, {150, 14}, WidgetType::button,       WindowColour::secondary, STR_IMPORT_EMSCRIPTEN,                     kStringIdNone                                ), // Emscripten data import
+        makeWidget        ({ 10, kAdvancedStart + 60}, {135, 14}, WidgetType::button,       WindowColour::secondary, STR_EXPORT_EMSCRIPTEN,                     kStringIdNone                                ), // Emscripten data export
+        makeWidget        ({150, kAdvancedStart + 60}, {150, 14}, WidgetType::button,       WindowColour::secondary, STR_IMPORT_EMSCRIPTEN,                     kStringIdNone                                ), // Emscripten data import
 #endif
-        makeWidget        ({150, kAdvancedStart + 64}, {150, 14}, WidgetType::button,       WindowColour::secondary, STR_EDIT_ASSET_PACKS_BUTTON,               kStringIdNone                                )  // Asset packs
+        makeWidget        ({150, kAdvancedStart + 78}, {150, 14}, WidgetType::button,       WindowColour::secondary, STR_EDIT_ASSET_PACKS_BUTTON,               kStringIdNone                                )  // Asset packs
     );
 
     static constexpr std::span<const Widget> window_options_page_widgets[] = {
@@ -2038,6 +2040,11 @@ namespace OpenRCT2::Ui::Windows
                     Config::Save();
                     invalidate();
                     break;
+                case WIDX_USE_ASTAR_PATHFINDING:
+                    Config::Get().general.useAStarPathfinding ^= 1;
+                    Config::Save();
+                    invalidate();
+                    break;
                 case WIDX_ALWAYS_NATIVE_LOADSAVE:
                     Config::Get().general.useNativeBrowseDialog = !Config::Get().general.useNativeBrowseDialog;
                     Config::Save();
@@ -2185,11 +2192,12 @@ namespace OpenRCT2::Ui::Windows
 
             setCheckboxValue(WIDX_DEBUGGING_TOOLS, Config::Get().general.debuggingTools);
             setCheckboxValue(WIDX_STAY_CONNECTED_AFTER_DESYNC, Config::Get().network.stayConnected);
+            setCheckboxValue(WIDX_USE_ASTAR_PATHFINDING, Config::Get().general.useAStarPathfinding);
 
 #ifdef __EMSCRIPTEN__
-            widgets[WIDX_GROUP_ADVANCED].bottom = kAdvancedStart + 84 + getTitleBarDiffNormal();
+            widgets[WIDX_GROUP_ADVANCED].bottom = kAdvancedStart + 98 + getTitleBarDiffNormal();
 #else
-            widgets[WIDX_GROUP_ADVANCED].bottom = kAdvancedStart + 64 + getTitleBarDiffNormal();
+            widgets[WIDX_GROUP_ADVANCED].bottom = kAdvancedStart + 78 + getTitleBarDiffNormal();
 #endif
 
             widgets[WIDX_ASSET_PACKS].top = widgets[WIDX_GROUP_ADVANCED].bottom - 20;

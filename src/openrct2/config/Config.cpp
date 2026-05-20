@@ -205,6 +205,7 @@ namespace OpenRCT2::Config
             model->playIntro = reader->GetBoolean("play_intro", false);
             model->savePluginData = reader->GetBoolean("save_plugin_data", true);
             model->debuggingTools = reader->GetBoolean("debugging_tools", false);
+            model->useAStarPathfinding = reader->GetBoolean("use_astar_pathfinding", false);
             model->showHeightAsUnits = reader->GetBoolean("show_height_as_units", false);
             model->temperatureFormat = reader->GetEnum<TemperatureUnit>(
                 "temperature_format", Platform::GetLocaleTemperatureFormat(), Enum_Temperature);
@@ -315,6 +316,7 @@ namespace OpenRCT2::Config
         writer->WriteBoolean("play_intro", model->playIntro);
         writer->WriteBoolean("save_plugin_data", model->savePluginData);
         writer->WriteBoolean("debugging_tools", model->debuggingTools);
+        writer->WriteBoolean("use_astar_pathfinding", model->useAStarPathfinding);
         writer->WriteBoolean("show_height_as_units", model->showHeightAsUnits);
         writer->WriteEnum<TemperatureUnit>("temperature_format", model->temperatureFormat, Enum_Temperature);
         writer->WriteInt32("window_height", model->windowHeight);
