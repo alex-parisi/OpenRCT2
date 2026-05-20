@@ -65,33 +65,8 @@ static void MineRideTrackStation(
     PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
 }
 
-/** rct2: 0x008B08E0 */
-static void MineRideTrack25DegUp(
-    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement, SupportType supportType)
-{
-    static constexpr ImageIndex _imageIds[4] = { 19388, 19389, 19390, 19391 };
-
-    PaintAddImageAsParentRotated(
-        session, direction, session.TrackColours.WithIndex(_imageIds[direction]), { 0, 0, height },
-        { { 0, 6, height }, { 32, 20, 3 } });
-    if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-    {
-        MetalASupportsPaintSetupRotated(
-            session, supportType.metal, MetalSupportPlace::centre, direction, 14, height, session.SupportColours);
-    }
-
-    if (direction == 0 || direction == 3)
-    {
-        PaintUtilPushTunnelRotated(session, direction, height - 8, kTunnelGroup, TunnelSubType::SlopeStart);
-    }
-    else
-    {
-        PaintUtilPushTunnelRotated(session, direction, height + 8, kTunnelGroup, TunnelSubType::SlopeEnd);
-    }
-    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 56);
-}
+/** rct2: 0x008B08E0 (25DegUp) — see paint/track_pieces/Flat.h::trackPaint25DegUp (no lift-chain variant) */
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kMineRide25DegUpSprites = { 19388, 19389, 19390, 19391 };
 
 /** rct2: 0x008B08F0 */
 static void MineRideTrackFlatTo25DegUp(
@@ -154,7 +129,9 @@ static void MineRideTrack25DegDown(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
     const TrackElement& trackElement, SupportType supportType)
 {
-    MineRideTrack25DegUp(session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
+    OpenRCT2::trackPaint25DegUp<
+        kMineRide25DegUpSprites, kMineRide25DegUpSprites, OpenRCT2::FlatTrackSupportStyle::metalRotated, 14, 56, kTunnelGroup>(
+        session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 /** rct2: 0x008B0920 */
@@ -5427,7 +5404,9 @@ TrackPaintFunction GetTrackPaintFunctionMineRide(TrackElemType trackType)
         case TrackElemType::middleStation:
             return MineRideTrackStation;
         case TrackElemType::up25:
-            return MineRideTrack25DegUp;
+            return OpenRCT2::trackPaint25DegUp<
+                kMineRide25DegUpSprites, kMineRide25DegUpSprites, OpenRCT2::FlatTrackSupportStyle::metalRotated, 14, 56,
+                kTunnelGroup>;
         case TrackElemType::flatToUp25:
             return MineRideTrackFlatTo25DegUp;
         case TrackElemType::up25ToFlat:

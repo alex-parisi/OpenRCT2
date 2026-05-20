@@ -88,79 +88,9 @@ static void MiniRCTrackStation(
     PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
 }
 
-/** rct2: 0x008A4ACC */
-static void MiniRCTrack25DegUp(
-    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement, SupportType supportType)
-{
-    if (trackElement.HasChain())
-    {
-        switch (direction)
-        {
-            case 0:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(19056), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 1:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(19057), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 2:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(19058), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 3:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(19059), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-        }
-    }
-    else
-    {
-        switch (direction)
-        {
-            case 0:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(18796), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 1:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(18797), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 2:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(18798), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 3:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(18799), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-        }
-    }
-    if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-    {
-        MetalASupportsPaintSetupRotated(
-            session, supportType.metal, MetalSupportPlace::centre, direction, 14, height, session.SupportColours);
-    }
-    if (direction == 0 || direction == 3)
-    {
-        PaintUtilPushTunnelRotated(session, direction, height - 8, kTunnelGroup, TunnelSubType::SlopeStart);
-    }
-    else
-    {
-        PaintUtilPushTunnelRotated(session, direction, height + 8, kTunnelGroup, TunnelSubType::SlopeEnd);
-    }
-    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 56);
-}
+/** rct2: 0x008A4ACC (25DegUp) — see paint/track_pieces/Flat.h::trackPaint25DegUp */
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kMiniRc25DegUpChainSprites = { 19056, 19057, 19058, 19059 };
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kMiniRc25DegUpSprites = { 18796, 18797, 18798, 18799 };
 
 /** rct2: 0x008A4ADC */
 static void MiniRCTrack60DegUp(
@@ -462,7 +392,9 @@ static void MiniRCTrack25DegDown(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
     const TrackElement& trackElement, SupportType supportType)
 {
-    MiniRCTrack25DegUp(session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
+    OpenRCT2::trackPaint25DegUp<
+        kMiniRc25DegUpChainSprites, kMiniRc25DegUpSprites, OpenRCT2::FlatTrackSupportStyle::metalRotated, 14, 56, kTunnelGroup>(
+        session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 /** rct2: 0x008A4B3C */
@@ -8951,7 +8883,9 @@ TrackPaintFunction GetTrackPaintFunctionMiniRC(TrackElemType trackType)
         case TrackElemType::middleStation:
             return MiniRCTrackStation;
         case TrackElemType::up25:
-            return MiniRCTrack25DegUp;
+            return OpenRCT2::trackPaint25DegUp<
+                kMiniRc25DegUpChainSprites, kMiniRc25DegUpSprites, OpenRCT2::FlatTrackSupportStyle::metalRotated, 14, 56,
+                kTunnelGroup>;
         case TrackElemType::up60:
             return MiniRCTrack60DegUp;
         case TrackElemType::flatToUp25:

@@ -108,4 +108,50 @@ namespace OpenRCT2
         PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
         PaintUtilSetGeneralSupportHeight(session, height + kGeneralSupportHeightExtra);
     }
+
+    // Data-driven painter for the straight 25-degree-up track piece of upright rides. Same idea as
+    // trackPaintFlat, but the slope adds a direction-dependent tunnel (a SlopeStart below the tile
+    // for directions 0/3, a SlopeEnd above it for 1/2) and a per-ride general support height. The
+    // sprite quad, centre metal support and kStraightFlat segments are otherwise shared.
+    template<
+        const std::array<ImageIndex, kNumOrthogonalDirections>& kChainSprites,
+        const std::array<ImageIndex, kNumOrthogonalDirections>& kSprites, const FlatTrackSupportStyle kSupportStyle,
+        const int8_t kSupportOffset, const int32_t kGeneralSupportHeightExtra, const TunnelGroup kTunnelGroup>
+    void trackPaint25DegUp(
+        PaintSession& session, const Ride& ride, const uint8_t trackSequence, const Direction direction, const int32_t height,
+        const OpenRCT2::TrackElement& trackElement, const SupportType supportType)
+    {
+        const auto& sprites = trackElement.HasChain() ? kChainSprites : kSprites;
+        PaintAddImageAsParentRotated(
+            session, direction, session.TrackColours.WithIndex(sprites[direction]), { 0, 0, height },
+            { { 0, 6, height }, { 32, 20, 3 } });
+
+        if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
+        {
+            if constexpr (kSupportStyle == FlatTrackSupportStyle::metalRotated)
+            {
+                MetalASupportsPaintSetupRotated(
+                    session, supportType.metal, MetalSupportPlace::centre, direction, kSupportOffset, height,
+                    session.SupportColours);
+            }
+            else if constexpr (kSupportStyle == FlatTrackSupportStyle::metal)
+            {
+                MetalASupportsPaintSetup(
+                    session, supportType.metal, MetalSupportPlace::centre, kSupportOffset, height, session.SupportColours);
+            }
+        }
+
+        if (direction == 0 || direction == 3)
+        {
+            PaintUtilPushTunnelRotated(session, direction, height - 8, kTunnelGroup, TunnelSubType::SlopeStart);
+        }
+        else
+        {
+            PaintUtilPushTunnelRotated(session, direction, height + 8, kTunnelGroup, TunnelSubType::SlopeEnd);
+        }
+
+        PaintUtilSetSegmentSupportHeight(
+            session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
+        PaintUtilSetGeneralSupportHeight(session, height + kGeneralSupportHeightExtra);
+    }
 } // namespace OpenRCT2
