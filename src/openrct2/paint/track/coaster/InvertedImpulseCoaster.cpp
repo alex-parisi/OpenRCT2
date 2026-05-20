@@ -56,69 +56,9 @@ static void InvertedImpulseRCTrackStation(
     PaintUtilSetGeneralSupportHeight(session, height + 48);
 }
 
-/** rct2: 0x008B04A0 */
-static void InvertedImpulseRCTrack25DegUp(
-    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement, SupportType supportType)
-{
-    switch (direction)
-    {
-        case 0:
-            PaintAddImageAsParentRotated(
-                session, direction, session.TrackColours.WithIndex(19672), { 0, 0, height + 29 },
-                { { 0, 6, height + 45 }, { 32, 20, 3 } });
-            break;
-        case 1:
-            PaintAddImageAsParentRotated(
-                session, direction, session.TrackColours.WithIndex(19673), { 0, 0, height + 29 },
-                { { 0, 6, height + 45 }, { 32, 20, 3 } });
-            break;
-        case 2:
-            PaintAddImageAsParentRotated(
-                session, direction, session.TrackColours.WithIndex(19674), { 0, 0, height + 29 },
-                { { 0, 6, height + 45 }, { 32, 20, 3 } });
-            break;
-        case 3:
-            PaintAddImageAsParentRotated(
-                session, direction, session.TrackColours.WithIndex(19675), { 0, 0, height + 29 },
-                { { 0, 6, height + 45 }, { 32, 20, 3 } });
-            break;
-    }
-
-    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
-    if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-    {
-        switch (direction)
-        {
-            case 0:
-                MetalASupportsPaintSetup(
-                    session, supportType.metal, MetalSupportPlace::topRightSide, 0, height + 62, session.SupportColours);
-                break;
-            case 1:
-                MetalASupportsPaintSetup(
-                    session, supportType.metal, MetalSupportPlace::bottomRightSide, 0, height + 62, session.SupportColours);
-                break;
-            case 2:
-                MetalASupportsPaintSetup(
-                    session, supportType.metal, MetalSupportPlace::bottomLeftSide, 0, height + 62, session.SupportColours);
-                break;
-            case 3:
-                MetalASupportsPaintSetup(
-                    session, supportType.metal, MetalSupportPlace::topLeftSide, 0, height + 62, session.SupportColours);
-                break;
-        }
-    }
-
-    if (direction == 0 || direction == 3)
-    {
-        PaintUtilPushTunnelRotated(session, direction, height - 8, kTunnelGroup, TunnelSubType::SlopeStart);
-    }
-    else
-    {
-        PaintUtilPushTunnelRotated(session, direction, height + 8, kTunnelGroup, TunnelSubType::SlopeEnd);
-    }
-    PaintUtilSetGeneralSupportHeight(session, height + 72);
-}
+/** rct2: 0x008B04A0 (25DegUp) — see paint/track_pieces/Flat.h::trackPaint25DegUpInverted (no lift-chain variant) */
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kInvertedImpulseRc25DegUpSprites = { 19672, 19673, 19674,
+                                                                                                       19675 };
 
 /** rct2: 0x008B04B0 */
 static void InvertedImpulseRCTrack60DegUp(
@@ -379,7 +319,9 @@ static void InvertedImpulseRCTrack25DegDown(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
     const TrackElement& trackElement, SupportType supportType)
 {
-    InvertedImpulseRCTrack25DegUp(session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
+    OpenRCT2::trackPaint25DegUpInverted<
+        kInvertedImpulseRc25DegUpSprites, kInvertedImpulseRc25DegUpSprites, 29, 45, 62, 72, kTunnelGroup>(
+        session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 /** rct2: 0x008B0510 */
@@ -742,7 +684,8 @@ TrackPaintFunction GetTrackPaintFunctionInvertedImpulseRC(TrackElemType trackTyp
         case TrackElemType::middleStation:
             return InvertedImpulseRCTrackStation;
         case TrackElemType::up25:
-            return InvertedImpulseRCTrack25DegUp;
+            return OpenRCT2::trackPaint25DegUpInverted<
+                kInvertedImpulseRc25DegUpSprites, kInvertedImpulseRc25DegUpSprites, 29, 45, 62, 72, kTunnelGroup>;
         case TrackElemType::up60:
             return InvertedImpulseRCTrack60DegUp;
         case TrackElemType::flatToUp25:

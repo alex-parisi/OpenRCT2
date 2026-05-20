@@ -59,98 +59,11 @@ static void InvertedHairpinRCTrackStation(
     PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
 }
 
-/** rct2: 0x00890CC4 */
-static void InvertedHairpinRCTrack25DegUp(
-    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement, SupportType supportType)
-{
-    if (trackElement.HasChain())
-    {
-        switch (direction)
-        {
-            case 0:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(17070), { 0, 0, height + 24 },
-                    { { 0, 6, height + 37 }, { 32, 20, 3 } });
-                break;
-            case 1:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(17071), { 0, 0, height + 24 },
-                    { { 0, 6, height + 37 }, { 32, 20, 3 } });
-                break;
-            case 2:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(17072), { 0, 0, height + 24 },
-                    { { 0, 6, height + 37 }, { 32, 20, 3 } });
-                break;
-            case 3:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(17073), { 0, 0, height + 24 },
-                    { { 0, 6, height + 37 }, { 32, 20, 3 } });
-                break;
-        }
-    }
-    else
-    {
-        switch (direction)
-        {
-            case 0:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(17042), { 0, 0, height + 24 },
-                    { { 0, 6, height + 37 }, { 32, 20, 3 } });
-                break;
-            case 1:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(17043), { 0, 0, height + 24 },
-                    { { 0, 6, height + 37 }, { 32, 20, 3 } });
-                break;
-            case 2:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(17044), { 0, 0, height + 24 },
-                    { { 0, 6, height + 37 }, { 32, 20, 3 } });
-                break;
-            case 3:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(17045), { 0, 0, height + 24 },
-                    { { 0, 6, height + 37 }, { 32, 20, 3 } });
-                break;
-        }
-    }
-
-    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
-    if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-    {
-        switch (direction)
-        {
-            case 0:
-                MetalASupportsPaintSetup(
-                    session, supportType.metal, MetalSupportPlace::topRightSide, 0, height + 48, session.SupportColours);
-                break;
-            case 1:
-                MetalASupportsPaintSetup(
-                    session, supportType.metal, MetalSupportPlace::bottomRightSide, 0, height + 48, session.SupportColours);
-                break;
-            case 2:
-                MetalASupportsPaintSetup(
-                    session, supportType.metal, MetalSupportPlace::bottomLeftSide, 0, height + 48, session.SupportColours);
-                break;
-            case 3:
-                MetalASupportsPaintSetup(
-                    session, supportType.metal, MetalSupportPlace::topLeftSide, 0, height + 48, session.SupportColours);
-                break;
-        }
-    }
-
-    if (direction == 0 || direction == 3)
-    {
-        PaintUtilPushTunnelRotated(session, direction, height - 8, kTunnelGroup, TunnelSubType::SlopeStart);
-    }
-    else
-    {
-        PaintUtilPushTunnelRotated(session, direction, height + 8, kTunnelGroup, TunnelSubType::SlopeEnd);
-    }
-    PaintUtilSetGeneralSupportHeight(session, height + 56);
-}
+/** rct2: 0x00890CC4 (25DegUp) — see paint/track_pieces/Flat.h::trackPaint25DegUpInverted */
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kInvertedHairpinRc25DegUpChainSprites = { 17070, 17071, 17072,
+                                                                                                            17073 };
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kInvertedHairpinRc25DegUpSprites = { 17042, 17043, 17044,
+                                                                                                       17045 };
 
 /** rct2: 0x00890CD4 */
 static void InvertedHairpinRCTrack60DegUp(
@@ -598,7 +511,9 @@ static void InvertedHairpinRCTrack25DegDown(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
     const TrackElement& trackElement, SupportType supportType)
 {
-    InvertedHairpinRCTrack25DegUp(session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
+    OpenRCT2::trackPaint25DegUpInverted<
+        kInvertedHairpinRc25DegUpChainSprites, kInvertedHairpinRc25DegUpSprites, 24, 37, 48, 56, kTunnelGroup>(
+        session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 /** rct2: 0x00890D34 */
@@ -1339,7 +1254,8 @@ TrackPaintFunction GetTrackPaintFunctionInvertedHairpinRC(TrackElemType trackTyp
         case TrackElemType::middleStation:
             return InvertedHairpinRCTrackStation;
         case TrackElemType::up25:
-            return InvertedHairpinRCTrack25DegUp;
+            return OpenRCT2::trackPaint25DegUpInverted<
+                kInvertedHairpinRc25DegUpChainSprites, kInvertedHairpinRc25DegUpSprites, 24, 37, 48, 56, kTunnelGroup>;
         case TrackElemType::up60:
             return InvertedHairpinRCTrack60DegUp;
         case TrackElemType::flatToUp25:

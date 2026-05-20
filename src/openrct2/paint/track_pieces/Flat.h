@@ -154,4 +154,47 @@ namespace OpenRCT2
             session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
         PaintUtilSetGeneralSupportHeight(session, height + kGeneralSupportHeightExtra);
     }
+    // Data-driven painter for the 25-degree-up piece of inverted/hung-track rides. Combines the
+    // inverted skeleton (segment height set before supports, sprite raised by a z-offset) with the
+    // slope's directional tunnel, plus a per-direction side support placement: the standard
+    // inverted-slope arrangement topRightSide/bottomRightSide/bottomLeftSide/topLeftSide painted
+    // with the non-rotated helper. Only the raised offsets and support/general heights vary.
+    template<
+        const std::array<ImageIndex, kNumOrthogonalDirections>& kChainSprites,
+        const std::array<ImageIndex, kNumOrthogonalDirections>& kSprites, const int32_t kImageZOffset,
+        const int32_t kBoundBoxZOffset, const int32_t kSupportHeightExtra, const int32_t kGeneralSupportHeightExtra,
+        const TunnelGroup kTunnelGroup>
+    void trackPaint25DegUpInverted(
+        PaintSession& session, const Ride& ride, const uint8_t trackSequence, const Direction direction, const int32_t height,
+        const OpenRCT2::TrackElement& trackElement, const SupportType supportType)
+    {
+        const auto& sprites = trackElement.HasChain() ? kChainSprites : kSprites;
+        PaintAddImageAsParentRotated(
+            session, direction, session.TrackColours.WithIndex(sprites[direction]), { 0, 0, height + kImageZOffset },
+            { { 0, 6, height + kBoundBoxZOffset }, { 32, 20, 3 } });
+
+        PaintUtilSetSegmentSupportHeight(
+            session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
+        if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
+        {
+            static constexpr MetalSupportPlace kPlaces[kNumOrthogonalDirections] = {
+                MetalSupportPlace::topRightSide,
+                MetalSupportPlace::bottomRightSide,
+                MetalSupportPlace::bottomLeftSide,
+                MetalSupportPlace::topLeftSide,
+            };
+            MetalASupportsPaintSetup(
+                session, supportType.metal, kPlaces[direction], 0, height + kSupportHeightExtra, session.SupportColours);
+        }
+
+        if (direction == 0 || direction == 3)
+        {
+            PaintUtilPushTunnelRotated(session, direction, height - 8, kTunnelGroup, TunnelSubType::SlopeStart);
+        }
+        else
+        {
+            PaintUtilPushTunnelRotated(session, direction, height + 8, kTunnelGroup, TunnelSubType::SlopeEnd);
+        }
+        PaintUtilSetGeneralSupportHeight(session, height + kGeneralSupportHeightExtra);
+    }
 } // namespace OpenRCT2
