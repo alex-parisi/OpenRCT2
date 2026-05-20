@@ -69,7 +69,8 @@ protected:
         return nullptr;
     }
 
-    static bool FindPath(TileCoordsXYZ* pos, const TileCoordsXYZ& goal, int expectedSteps, RideId targetRideID)
+    static bool FindPath(
+        TileCoordsXYZ* pos, const TileCoordsXYZ& goal, int expectedSteps, RideId targetRideID, bool requireExactSteps = true)
     {
         // Our start position is in tile coordinates, but we need to give the peep spawn
         // position in actual world coords (32 units per tile X/Y, 8 per Z level).
@@ -129,7 +130,11 @@ protected:
         // such a change in the number of steps taken on one of these paths needs to be reviewed. For the negative
         // tests, we will not have reached the goal but we still expect the loop to have run for the total number
         // of steps requested before giving up.
-        EXPECT_EQ(step, expectedSteps);
+        //
+        // The A* pathfinder finds a shortest route that need not match the classic heuristic's step count, so its
+        // tests only require the goal is reached within the step budget (requireExactSteps == false).
+        if (requireExactSteps)
+            EXPECT_EQ(step, expectedSteps);
 
         return *pos == goal;
     }
@@ -353,3 +358,64 @@ TEST_F(MechanicPatrolPathfindingTest, MechanicStaysWithinPatrolArea)
         PeepEntityRemove(mechanic);
     }
 }
+
+// Runs the standard guest scenarios with A* pathfinding enabled. A* finds a shortest route whose step
+// count need not match the classic heuristic, so these only assert the goal is reached (not the exact
+// step count). This guards the guarantee that, with A* on, guests still route to their destinations on
+// every standard layout - i.e. A* never strands a guest that the classic pathfinder could route, since
+// it falls back to the classic search whenever it cannot resolve a complete route itself.
+class AStarPathfindingTest : public PathfindingTestBase, public testing::WithParamInterface<SimplePathfindingScenario>
+{
+protected:
+    void SetUp() override
+    {
+        PathfindingTestBase::SetUp();
+        _previousAStarSetting = Config::Get().general.useAStarPathfinding;
+        Config::Get().general.useAStarPathfinding = true;
+    }
+
+    void TearDown() override
+    {
+        Config::Get().general.useAStarPathfinding = _previousAStarSetting;
+    }
+
+    bool _previousAStarSetting = false;
+};
+
+TEST_P(AStarPathfindingTest, CanFindPathFromStartToGoal)
+{
+    const SimplePathfindingScenario& scenario = GetParam();
+
+    ASSERT_PRED_FORMAT1(AssertIsStartPosition, scenario.start);
+    TileCoordsXYZ pos = scenario.start;
+
+    auto ride = FindRideByName(scenario.name);
+    ASSERT_NE(ride, nullptr);
+
+    auto entrancePos = ride->getStation().Entrance;
+    TileCoordsXYZ goal = TileCoordsXYZ(
+        entrancePos.x - TileDirectionDelta[entrancePos.direction].x,
+        entrancePos.y - TileDirectionDelta[entrancePos.direction].y, entrancePos.z);
+
+    // Allow a generous step budget; A* should reach the goal well within it.
+    const int stepBudget = 10000;
+    const auto succeeded = FindPath(&pos, goal, stepBudget, ride->id, /*requireExactSteps*/ false) ? testing::AssertionSuccess()
+                                                                                                   : testing::AssertionFailure()
+            << "A* failed to find path from " << scenario.start << " to " << goal << " within " << stepBudget
+            << " steps; reached " << pos << " before giving up.";
+
+    EXPECT_TRUE(succeeded);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    ForScenario, AStarPathfindingTest,
+    ::testing::Values(
+        SimplePathfindingScenario("StraightFlat", { 19, 15, 14 }, 10000),
+        SimplePathfindingScenario("SBend", { 15, 12, 14 }, 10000), SimplePathfindingScenario("UBend", { 17, 9, 14 }, 10000),
+        SimplePathfindingScenario("CBend", { 14, 5, 14 }, 10000),
+        SimplePathfindingScenario("TwoEqualRoutes", { 9, 13, 14 }, 10000),
+        SimplePathfindingScenario("TwoUnequalRoutes", { 3, 13, 14 }, 10000),
+        SimplePathfindingScenario("StraightUpBridge", { 12, 15, 14 }, 10000),
+        SimplePathfindingScenario("StraightUpSlope", { 14, 15, 14 }, 10000),
+        SimplePathfindingScenario("SelfCrossingPath", { 6, 5, 14 }, 10000)),
+    SimplePathfindingScenario::ToName);

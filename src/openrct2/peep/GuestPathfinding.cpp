@@ -1636,7 +1636,24 @@ namespace OpenRCT2::PathFinding
         const TileCoordsXYZ& loc, const TileCoordsXYZ& goal, Peep& peep, bool ignoreForeignQueues, RideId queueRideIndex)
     {
         if (Config::Get().general.useAStarPathfinding)
-            return AStarChooseDirection(loc, goal, peep, ignoreForeignQueues, queueRideIndex);
+        {
+            const Direction aStarDir = AStarChooseDirection(loc, goal, peep, ignoreForeignQueues, queueRideIndex);
+            if (aStarDir != kInvalidDirection)
+                return aStarDir;
+
+            // Staff (mechanics) deliberately rely on A*'s all-or-nothing, patrol-restricted result:
+            // returning "no route" is what keeps a mechanic from being routed outside its patrol area, so
+            // they are not given the best-effort fallback below.
+            if (peep.as<Staff>() != nullptr)
+                return kInvalidDirection;
+
+            // For guests, A* found no complete route within its node budget - e.g. a distant goal on a
+            // large map, a goal momentarily disconnected by path edits, or simply farther than the budget
+            // reaches. Rather than give up (which sends the guest aimless and frequently lost), fall through
+            // to the classic best-effort heuristic search below, which always returns a direction that makes
+            // progress towards the goal whenever any edge is available. A* therefore only ever improves guest
+            // routing when it succeeds and never routes worse than the classic pathfinder.
+        }
 
         PROFILED_FUNCTION();
 
