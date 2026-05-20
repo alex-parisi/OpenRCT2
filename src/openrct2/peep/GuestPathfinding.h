@@ -23,6 +23,13 @@ namespace OpenRCT2
 
 namespace OpenRCT2::PathFinding
 {
+    // When guests walk along paths wider than the pathfinder's natural corridor, this lets them
+    // occasionally drift sideways into connected adjacent lanes (preferring emptier ones) so the
+    // full width of the path is used. It affects the deterministic simulation, so on a network
+    // client the server's value (below) is used instead of the local config option.
+    extern bool gSpreadGuestsOnWidePathsInNetworkPlay;
+    bool ShouldSpreadGuestsOnWidePaths();
+
     Direction ChooseDirection(
         const TileCoordsXYZ& loc, const TileCoordsXYZ& goal, Peep& peep, bool ignoreForeignQueues, RideId queueRideIndex);
 

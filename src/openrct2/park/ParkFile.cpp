@@ -45,6 +45,7 @@
 #include "../object/ObjectLimits.h"
 #include "../object/ObjectManager.h"
 #include "../object/ObjectRepository.h"
+#include "../peep/GuestPathfinding.h"
 #include "../peep/RideUseSystem.h"
 #include "../rct2/RCT2.h"
 #include "../ride/RideManager.hpp"
@@ -526,6 +527,22 @@ namespace OpenRCT2
                 if (os.getHeader().targetVersion >= 1)
                 {
                     cs.readWrite(gameState.scenarioFileName);
+                }
+
+                if (os.getHeader().targetVersion >= kSpreadGuestsOnWidePathsVersion)
+                {
+                    if (cs.getMode() == OrcaStream::Mode::reading)
+                    {
+                        auto spreadGuests = cs.read<bool>();
+                        if (Network::GetMode() == Network::Mode::client)
+                        {
+                            PathFinding::gSpreadGuestsOnWidePathsInNetworkPlay = spreadGuests;
+                        }
+                    }
+                    else
+                    {
+                        cs.write(PathFinding::ShouldSpreadGuestsOnWidePaths());
+                    }
                 }
             });
         }

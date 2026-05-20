@@ -107,6 +107,7 @@ namespace OpenRCT2::Config
         bool showRealNamesOfGuests;
         bool showRealNamesOfStaff;
         bool allowEarlyCompletion;
+        bool spreadGuestsOnWidePaths;
         u8string assetPackOrder;
         u8string enabledAssetPacks;
 

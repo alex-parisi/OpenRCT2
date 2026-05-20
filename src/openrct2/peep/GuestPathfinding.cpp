@@ -11,9 +11,12 @@
 
 #include "../Diagnostic.h"
 #include "../GameState.h"
+#include "../config/Config.h"
 #include "../core/Guard.hpp"
+#include "../entity/EntityList.h"
 #include "../entity/Guest.h"
 #include "../entity/Staff.h"
+#include "../network/Network.h"
 #include "../profiling/Profiling.h"
 #include "../ride/RideData.h"
 #include "../ride/Station.h"
@@ -28,13 +31,28 @@
 #include "../world/tile_element/TileElement.h"
 #include "../world/tile_element/TrackElement.h"
 
+#include <array>
 #include <bit>
 #include <bitset>
 #include <cassert>
 #include <cstring>
+#include <optional>
 
 namespace OpenRCT2::PathFinding
 {
+    // Server-supplied value used on network clients; see ShouldSpreadGuestsOnWidePaths().
+    bool gSpreadGuestsOnWidePathsInNetworkPlay;
+
+    bool ShouldSpreadGuestsOnWidePaths()
+    {
+        // This influences the deterministic simulation, so a network client must use the value the
+        // server sends (mirrored into the park file) rather than its own local config option.
+        if (Network::GetMode() == Network::Mode::client)
+            return gSpreadGuestsOnWidePathsInNetworkPlay;
+
+        return Config::Get().general.spreadGuestsOnWidePaths;
+    }
+
     // The search limits the maximum junctions by certain conditions.
     static constexpr uint8_t kMaxJunctionsStaff = 8;
     static constexpr uint8_t kMaxJunctionsGuest = 5;
@@ -1877,6 +1895,119 @@ namespace OpenRCT2::PathFinding
 
         return StationIndex::FromUnderlying(0);
     }
+    // Roughly how often (out of 256, per path tile entered) a guest eligible for lane-spreading will
+    // re-evaluate which lane to occupy. Kept moderate so guests mostly keep flowing forward and only
+    // drift sideways now and then rather than visibly weaving.
+    static constexpr uint32_t kWidePathLaneStepChance = 48;
+
+    static int32_t GuestCountOnTile(const CoordsXY& pos)
+    {
+        int32_t count = 0;
+        for ([[maybe_unused]] auto* guest : EntityTileList<Guest>(pos))
+            count++;
+        return count;
+    }
+
+    /**
+     * When a guest is walking along a path that is wider than the pathfinder's natural corridor, the
+     * goal-directed search funnels everyone onto the same few (non-wide) tiles, leaving the rest of the
+     * path empty. This optionally lets a guest shift sideways into a connected, less-crowded parallel
+     * lane so the full width of the path gets used.
+     *
+     * It deliberately does NOT change which tiles the pathfinder considers reachable: it only ever
+     * substitutes a parallel, equally-valid lane for one tile. The next tile the guest enters, the
+     * normal goal-directed logic runs again and routes it onward, so the impact on pathfinding is a
+     * single one-tile lateral detour rather than a change to route selection.
+     *
+     * Returns the perpendicular direction to step in, or nullopt to leave the normal decision alone.
+     */
+    static std::optional<Direction> ChooseWidePathLaneStep(Guest& peep, uint32_t edges, const PathElement& pathElement)
+    {
+        if (!ShouldSpreadGuestsOnWidePaths())
+            return std::nullopt;
+
+        // Leave queuing guests and sloped/queue tiles to the normal logic; lateral movement there is
+        // either meaningless or visually wrong.
+        if (peep.State == PeepState::queuing || pathElement.IsSloped() || pathElement.IsQueue())
+            return std::nullopt;
+
+        // Only ever divert a guest that could otherwise carry straight on. We never want to send a guest
+        // down a side path it would not have taken - only shuffle it between parallel lanes - so if it
+        // cannot continue forwards we bail and let the goal-directed search decide.
+        const Direction forward = peep.PeepDirection;
+        if (!DirectionValid(forward) || !(edges & (1 << forward)))
+            return std::nullopt;
+
+        const auto basePos = CoordsXY{ peep.NextLoc };
+        const auto baseZ = TileCoordsXYZ{ peep.NextLoc }.z;
+
+        // Collect the perpendicular lanes that run parallel alongside this one. A genuine parallel lane is
+        // a connected, flat, walkable path tile that itself continues in the forward direction - that is
+        // what distinguishes the extra width of a wide path from a perpendicular side path or a junction
+        // arm the guest would only take to reach its goal. Confining to parallel lanes keeps this from
+        // luring guests down narrow side paths.
+        struct Lane
+        {
+            Direction direction;
+            CoordsXY pos;
+        };
+        std::array<Lane, 2> lanes{};
+        size_t laneCount = 0;
+        for (const Direction side : { static_cast<Direction>((forward + 3) & 3), static_cast<Direction>((forward + 1) & 3) })
+        {
+            if (!(edges & (1 << side)))
+                continue;
+
+            const auto neighbourPos = basePos + CoordsDirectionDelta[side];
+            auto* neighbour = MapGetPathElementAt(TileCoordsXYZ{ TileCoordsXY{ neighbourPos }, baseZ });
+            if (neighbour == nullptr || neighbour->IsQueue() || neighbour->IsSloped())
+                continue;
+
+            // The neighbour must be able to carry on in the same direction we are walking, otherwise it is
+            // not a lane running alongside us but a stub or a path heading elsewhere.
+            if (!(PathGetPermittedEdges(false, neighbour) & (1 << forward)))
+                continue;
+
+            lanes[laneCount++] = { side, neighbourPos };
+        }
+        if (laneCount == 0)
+            return std::nullopt;
+
+        // Only roll the dice once we know spreading is actually possible here, so paths with no spare
+        // width neither cost a random draw nor have their behaviour changed.
+        if ((ScenarioRand() & 0xFF) >= kWidePathLaneStepChance)
+            return std::nullopt;
+
+        // Crowd-aware spreading: weigh carrying straight on against each parallel lane by how busy the
+        // destination tile is, and take the least-crowded option. When several are equally quiet (e.g. an
+        // empty path) the tie is broken at random, so guests gradually fan out to fill the width instead
+        // of all tracking the same line, while still draining out of any lane that becomes packed.
+        std::array<std::optional<Direction>, 3> options{}; // nullopt == carry straight on
+        std::array<int32_t, 3> counts{};
+        size_t count = 0;
+        options[count] = std::nullopt;
+        counts[count++] = GuestCountOnTile(basePos + CoordsDirectionDelta[forward]);
+        for (size_t i = 0; i < laneCount; i++)
+        {
+            options[count] = lanes[i].direction;
+            counts[count++] = GuestCountOnTile(lanes[i].pos);
+        }
+
+        int32_t bestCount = counts[0];
+        for (size_t i = 1; i < count; i++)
+            bestCount = std::min(bestCount, counts[i]);
+
+        std::array<std::optional<Direction>, 3> best{};
+        size_t bestCountN = 0;
+        for (size_t i = 0; i < count; i++)
+        {
+            if (counts[i] == bestCount)
+                best[bestCountN++] = options[i];
+        }
+
+        return best[bestCountN == 1 ? 0 : (ScenarioRand() % bestCountN)];
+    }
+
     /**
      *
      *  rct2: 0x00694C35
@@ -1904,6 +2035,15 @@ namespace OpenRCT2::PathFinding
         if (edges == 0)
         {
             return GuestSurfacePathFinding(peep);
+        }
+
+        // Optionally let the guest drift into a less-crowded parallel lane of a wide path. Evaluated
+        // against the full edge set (before wide edges are culled below) so the wide filler lanes remain
+        // candidates.
+        if (auto laneStep = ChooseWidePathLaneStep(peep, edges, *pathElement); laneStep.has_value())
+        {
+            LogPathfinding(&peep, "Completed CalculateNextDestination - spreading onto wide path lane: %d.", *laneStep);
+            return PeepMoveOneTile(*laneStep, peep);
         }
 
         if (!peep.OutsideOfPark && peep.HeadingForRideOrParkExit())

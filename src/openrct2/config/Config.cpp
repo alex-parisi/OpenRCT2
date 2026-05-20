@@ -267,6 +267,7 @@ namespace OpenRCT2::Config
             model->showRealNamesOfGuests = reader->GetBoolean("show_real_names_of_guests", true);
             model->showRealNamesOfStaff = reader->GetBoolean("show_real_names_of_staff", false);
             model->allowEarlyCompletion = reader->GetBoolean("allow_early_completion", false);
+            model->spreadGuestsOnWidePaths = reader->GetBoolean("spread_guests_on_wide_paths", false);
             model->assetPackOrder = reader->GetString("asset_pack_order", "");
             model->enabledAssetPacks = reader->GetString("enabled_asset_packs", "");
             model->transparentScreenshot = reader->GetBoolean("transparent_screenshot", true);
@@ -364,6 +365,7 @@ namespace OpenRCT2::Config
         writer->WriteBoolean("show_real_names_of_guests", model->showRealNamesOfGuests);
         writer->WriteBoolean("show_real_names_of_staff", model->showRealNamesOfStaff);
         writer->WriteBoolean("allow_early_completion", model->allowEarlyCompletion);
+        writer->WriteBoolean("spread_guests_on_wide_paths", model->spreadGuestsOnWidePaths);
         writer->WriteString("asset_pack_order", model->assetPackOrder);
         writer->WriteString("enabled_asset_packs", model->enabledAssetPacks);
         writer->WriteEnum<VirtualFloorStyles>("virtual_floor_style", model->virtualFloorStyle, Enum_VirtualFloorStyle);
