@@ -18,6 +18,7 @@
 #include "../../tile_element/Segment.h"
 #include "../../track/Segment.h"
 #include "../../track/Support.h"
+#include "../../track_pieces/Flat.h"
 
 using namespace OpenRCT2;
 
@@ -168,29 +169,14 @@ static constexpr uint32_t _wild_mouse_block_brakes_image_ids[kNumOrthogonalDirec
     { SPR_WILD_MOUSE_BLOCK_BRAKES_NW_SE_OPEN, SPR_WILD_MOUSE_BLOCK_BRAKES_NW_SE_CLOSED },
 };
 
-/** rct2: 0x0078B1E4 */
-static void WildMouseTrackFlat(
-    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement, SupportType supportType)
-{
-    static constexpr uint32_t imageIds[4][2] = {
-        { SPR_WILD_MOUSE_FLAT_SW_NE, SPR_WILD_MOUSE_FLAT_CHAIN_SW_NE },
-        { SPR_WILD_MOUSE_FLAT_NW_SE, SPR_WILD_MOUSE_FLAT_CHAIN_NW_SE },
-        { SPR_WILD_MOUSE_FLAT_SW_NE, SPR_WILD_MOUSE_FLAT_CHAIN_NE_SW },
-        { SPR_WILD_MOUSE_FLAT_NW_SE, SPR_WILD_MOUSE_FLAT_CHAIN_SE_NW },
-    };
-
-    uint8_t isChained = trackElement.HasChain() ? 1 : 0;
-    auto imageId = session.TrackColours.WithIndex(imageIds[direction][isChained]);
-    PaintAddImageAsParentRotated(session, direction, imageId, { 0, 0, height }, { { 0, 6, height }, { 32, 20, 3 } });
-    if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-    {
-        MetalASupportsPaintSetup(session, supportType.metal, MetalSupportPlace::centre, -1, height, session.SupportColours);
-    }
-    PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
-    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
-}
+/** rct2: 0x0078B1E4 (Flat) — see paint/track_pieces/Flat.h::trackPaintFlat */
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kWildMouseFlatChainSprites = {
+    SPR_WILD_MOUSE_FLAT_CHAIN_SW_NE, SPR_WILD_MOUSE_FLAT_CHAIN_NW_SE, SPR_WILD_MOUSE_FLAT_CHAIN_NE_SW,
+    SPR_WILD_MOUSE_FLAT_CHAIN_SE_NW
+};
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kWildMouseFlatSprites = {
+    SPR_WILD_MOUSE_FLAT_SW_NE, SPR_WILD_MOUSE_FLAT_NW_SE, SPR_WILD_MOUSE_FLAT_SW_NE, SPR_WILD_MOUSE_FLAT_NW_SE
+};
 
 static void WildMouseTrackStation(
     PaintSession& session, const Ride& ride, [[maybe_unused]] uint8_t trackSequence, uint8_t direction, int32_t height,
@@ -944,7 +930,8 @@ TrackPaintFunction GetTrackPaintFunctionWildMouse(TrackElemType trackType)
     switch (trackType)
     {
         case TrackElemType::flat:
-            return WildMouseTrackFlat;
+            return OpenRCT2::trackPaintFlat<
+                kWildMouseFlatChainSprites, kWildMouseFlatSprites, OpenRCT2::FlatTrackSupportStyle::metal, -1, kTunnelGroup>;
         case TrackElemType::endStation:
         case TrackElemType::beginStation:
         case TrackElemType::middleStation:

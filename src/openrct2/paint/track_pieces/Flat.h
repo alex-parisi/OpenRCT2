@@ -47,8 +47,8 @@ namespace OpenRCT2
         const std::array<ImageIndex, kNumOrthogonalDirections>& kSprites, const FlatTrackSupportStyle kSupportStyle,
         const int8_t kSupportOffset, const TunnelGroup kTunnelGroup>
     void trackPaintFlat(
-        PaintSession& session, const Ride& ride, const uint8_t trackSequence, const Direction direction,
-        const int32_t height, const OpenRCT2::TrackElement& trackElement, const SupportType supportType)
+        PaintSession& session, const Ride& ride, const uint8_t trackSequence, const Direction direction, const int32_t height,
+        const OpenRCT2::TrackElement& trackElement, const SupportType supportType)
     {
         const auto& sprites = trackElement.HasChain() ? kChainSprites : kSprites;
         PaintAddImageAsParentRotated(

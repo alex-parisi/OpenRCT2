@@ -18,6 +18,7 @@
 #include "../../tile_element/Segment.h"
 #include "../../track/Segment.h"
 #include "../../track/Support.h"
+#include "../../track_pieces/Flat.h"
 #include "../../track_pieces/QuarterHelix.h"
 
 using namespace OpenRCT2;
@@ -33,26 +34,8 @@ static constexpr std::array<std::array<int8_t, kNumOrthogonalDirections>, kQuart
 static constexpr std::array<std::array<int8_t, kNumOrthogonalDirections>, kQuarterHelixSequenceCount>
     kRightQuarterBankedHelixSupportHeights = { { { 5, 9, 8, 10 }, {}, {}, {}, {}, {}, { 11, 14, 14, 10 } } };
 
-/** rct2: 0x008B08D0 */
-static void MineRideTrackFlat(
-    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement, SupportType supportType)
-{
-    static constexpr ImageIndex _imageIds[4] = { 19338, 19339, 19338, 19339 };
-
-    PaintAddImageAsParentRotated(
-        session, direction, session.TrackColours.WithIndex(_imageIds[direction]), { 0, 0, height },
-        { { 0, 6, height }, { 32, 20, 3 } });
-    if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-    {
-        MetalASupportsPaintSetupRotated(
-            session, supportType.metal, MetalSupportPlace::centre, direction, 6, height, session.SupportColours);
-    }
-
-    PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
-    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
-}
+/** rct2: 0x008B08D0 (Flat) — see paint/track_pieces/Flat.h::trackPaintFlat (no lift-chain variant) */
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kMineRideFlatSprites = { 19338, 19339, 19338, 19339 };
 
 static void MineRideTrackStation(
     PaintSession& session, const Ride& ride, [[maybe_unused]] uint8_t trackSequence, uint8_t direction, int32_t height,
@@ -5437,7 +5420,8 @@ TrackPaintFunction GetTrackPaintFunctionMineRide(TrackElemType trackType)
     switch (trackType)
     {
         case TrackElemType::flat:
-            return MineRideTrackFlat;
+            return OpenRCT2::trackPaintFlat<
+                kMineRideFlatSprites, kMineRideFlatSprites, OpenRCT2::FlatTrackSupportStyle::metalRotated, 6, kTunnelGroup>;
         case TrackElemType::endStation:
         case TrackElemType::beginStation:
         case TrackElemType::middleStation:

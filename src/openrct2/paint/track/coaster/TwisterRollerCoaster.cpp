@@ -20,6 +20,7 @@
 #include "../../tile_element/Segment.h"
 #include "../../track/Segment.h"
 #include "../../track/Support.h"
+#include "../../track_pieces/Flat.h"
 #include "../../track_pieces/QuarterHelix.h"
 
 using namespace OpenRCT2;
@@ -69,49 +70,9 @@ static constexpr std::array<std::array<int8_t, kNumOrthogonalDirections>, kQuart
 static constexpr std::array<std::array<int8_t, kNumOrthogonalDirections>, kQuarterHelixSequenceCount>
     kRightQuarterBankedHelixSupportHeights = { { { 4, 5, 4, 0 }, {}, {}, {}, {}, {}, { 8, 6, 6, 10 } } };
 
-static void TwisterRCTrackFlat(
-    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement, SupportType supportType)
-{
-    if (trackElement.HasChain())
-    {
-        static constexpr uint32_t imageIds[] = {
-            17486,
-            17487,
-            17488,
-            17489,
-        };
-        PaintAddImageAsParentRotated(
-            session, direction, session.TrackColours.WithIndex(imageIds[direction]), { 0, 0, height },
-            { { 0, 6, height }, { 32, 20, 3 } });
-
-        if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-        {
-            MetalASupportsPaintSetup(session, supportType.metal, MetalSupportPlace::centre, 0, height, session.SupportColours);
-        }
-    }
-    else
-    {
-        static constexpr uint32_t imageIds[] = {
-            17146,
-            17147,
-            17146,
-            17147,
-        };
-
-        PaintAddImageAsParentRotated(
-            session, direction, session.TrackColours.WithIndex(imageIds[direction]), { 0, 0, height },
-            { { 0, 6, height }, { 32, 20, 3 } });
-
-        if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-        {
-            MetalASupportsPaintSetup(session, supportType.metal, MetalSupportPlace::centre, 0, height, session.SupportColours);
-        }
-    }
-    PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
-    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
-}
+/** Flat — see paint/track_pieces/Flat.h::trackPaintFlat */
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kTwisterRcFlatChainSprites = { 17486, 17487, 17488, 17489 };
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kTwisterRcFlatSprites = { 17146, 17147, 17146, 17147 };
 
 static void TwisterRCTrackStation(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
@@ -20064,7 +20025,8 @@ TrackPaintFunction GetTrackPaintFunctionTwisterRC(TrackElemType trackType)
     switch (trackType)
     {
         case TrackElemType::flat:
-            return TwisterRCTrackFlat;
+            return OpenRCT2::trackPaintFlat<
+                kTwisterRcFlatChainSprites, kTwisterRcFlatSprites, OpenRCT2::FlatTrackSupportStyle::metal, 0, kTunnelGroup>;
         case TrackElemType::endStation:
         case TrackElemType::beginStation:
         case TrackElemType::middleStation:

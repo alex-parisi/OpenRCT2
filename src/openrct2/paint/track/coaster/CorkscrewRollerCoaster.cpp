@@ -69,8 +69,7 @@ static constexpr std::array<std::array<int8_t, kNumOrthogonalDirections>, kQuart
     kRightQuarterBankedHelixSupportHeights = { { { 4, 5, 4, 0 }, {}, {}, {}, {}, {}, { 8, 6, 6, 10 } } };
 
 /** rct2: 0x008A7AF8 (Flat) — see paint/track_pieces/Flat.h::trackPaintFlat */
-static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kCorkscrewRcFlatChainSprites = { 16226, 16227, 16228,
-                                                                                                   16229 };
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kCorkscrewRcFlatChainSprites = { 16226, 16227, 16228, 16229 };
 static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kCorkscrewRcFlatSprites = { 16224, 16225, 16224, 16225 };
 
 /** rct2: 0x008A7D68, 0x008A7D78, 0x008A7D88 */
