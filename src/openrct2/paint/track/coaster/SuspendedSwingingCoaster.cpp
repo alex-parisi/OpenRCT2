@@ -17,6 +17,7 @@
 #include "../../tile_element/Paint.TileElement.h"
 #include "../../tile_element/Segment.h"
 #include "../../track/Segment.h"
+#include "../../track_pieces/Flat.h"
 
 using namespace OpenRCT2;
 
@@ -27,57 +28,11 @@ static constexpr ImageIndex kSuspendedSwingingRCDiagFlatImages[2][kNumOrthogonal
     { 26211, 26212, 26213, 26214 },
 };
 
-/** rct2: 0x008A8958 */
-static void SuspendedSwingingRCTrackFlat(
-    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement, SupportType supportType)
-{
-    if (trackElement.HasChain())
-    {
-        switch (direction)
-        {
-            case 0:
-            case 2:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(25963), { 0, 0, height + 29 },
-                    { { 0, 6, height + 29 }, { 32, 20, 3 } });
-                break;
-            case 1:
-            case 3:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(25964), { 0, 0, height + 29 },
-                    { { 0, 6, height + 29 }, { 32, 20, 3 } });
-                break;
-        }
-    }
-    else
-    {
-        switch (direction)
-        {
-            case 0:
-            case 2:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(25961), { 0, 0, height + 29 },
-                    { { 0, 6, height + 29 }, { 32, 20, 3 } });
-                break;
-            case 1:
-            case 3:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(25962), { 0, 0, height + 29 },
-                    { { 0, 6, height + 29 }, { 32, 20, 3 } });
-                break;
-        }
-    }
-
-    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
-    if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-    {
-        MetalASupportsPaintSetup(session, supportType.metal, MetalSupportPlace::centre, 0, height + 44, session.SupportColours);
-    }
-
-    PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
-    PaintUtilSetGeneralSupportHeight(session, height + 48);
-}
+/** rct2: 0x008A8958 (Flat) — see paint/track_pieces/Flat.h::trackPaintFlatInverted */
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kSuspendedSwingingRcFlatChainSprites = { 25963, 25964, 25963,
+                                                                                                           25964 };
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kSuspendedSwingingRcFlatSprites = { 25961, 25962, 25961,
+                                                                                                      25962 };
 
 /** rct2: 0x008A8AA8, 0x008A8AB8, 0x008A8AC8 */
 static void SuspendedSwingingRCTrackStation(
@@ -4692,7 +4647,8 @@ TrackPaintFunction GetTrackPaintFunctionSuspendedSwingingRC(TrackElemType trackT
     switch (trackType)
     {
         case TrackElemType::flat:
-            return SuspendedSwingingRCTrackFlat;
+            return OpenRCT2::trackPaintFlatInverted<
+                kSuspendedSwingingRcFlatChainSprites, kSuspendedSwingingRcFlatSprites, 29, 29, 3, 44, 48, kTunnelGroup>;
         case TrackElemType::endStation:
         case TrackElemType::beginStation:
         case TrackElemType::middleStation:

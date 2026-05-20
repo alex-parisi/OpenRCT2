@@ -18,41 +18,15 @@
 #include "../../tile_element/Segment.h"
 #include "../../track/Segment.h"
 #include "../../track/Support.h"
+#include "../../track_pieces/Flat.h"
 
 using namespace OpenRCT2;
 
 static constexpr TunnelGroup kTunnelGroup = TunnelGroup::Inverted;
 
-/** rct2: 0x008B0460 */
-static void InvertedImpulseRCTrackFlat(
-    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement, SupportType supportType)
-{
-    switch (direction)
-    {
-        case 0:
-        case 2:
-            PaintAddImageAsParentRotated(
-                session, direction, session.TrackColours.WithIndex(19662), { 0, 0, height + 29 },
-                { { 0, 6, height + 29 }, { 32, 20, 3 } });
-            break;
-        case 1:
-        case 3:
-            PaintAddImageAsParentRotated(
-                session, direction, session.TrackColours.WithIndex(19663), { 0, 0, height + 29 },
-                { { 0, 6, height + 29 }, { 32, 20, 3 } });
-            break;
-    }
-
-    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
-    if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-    {
-        MetalASupportsPaintSetup(session, supportType.metal, MetalSupportPlace::centre, 0, height + 44, session.SupportColours);
-    }
-
-    PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
-    PaintUtilSetGeneralSupportHeight(session, height + 48);
-}
+/** rct2: 0x008B0460 (Flat) — see paint/track_pieces/Flat.h::trackPaintFlatInverted (no lift-chain variant) */
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kInvertedImpulseRcFlatSprites = { 19662, 19663, 19662,
+                                                                                                    19663 };
 
 /** rct2: 0x008B0470, 0x008B0480, 0x008B0490 */
 static void InvertedImpulseRCTrackStation(
@@ -761,7 +735,8 @@ TrackPaintFunction GetTrackPaintFunctionInvertedImpulseRC(TrackElemType trackTyp
     switch (trackType)
     {
         case TrackElemType::flat:
-            return InvertedImpulseRCTrackFlat;
+            return OpenRCT2::trackPaintFlatInverted<
+                kInvertedImpulseRcFlatSprites, kInvertedImpulseRcFlatSprites, 29, 29, 3, 44, 48, kTunnelGroup>;
         case TrackElemType::endStation:
         case TrackElemType::beginStation:
         case TrackElemType::middleStation:

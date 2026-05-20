@@ -13,6 +13,7 @@
 #include "../../../ride/ted/TrackElemType.h"
 #include "../../../world/tile_element/TrackElement.h"
 #include "../../track/Segment.h"
+#include "../../track_pieces/Flat.h"
 
 #include <cstdint>
 
@@ -28,58 +29,10 @@ static constexpr const uint32_t kInvertedRCDiagBrakeImages[kNumOrthogonalDirecti
     SPR_TRACKS_BM_INVERT_DIAG_BRAKES + 1,
 };
 
-/** rct2: 0x007C6FF4 */
-static void InvertedFlyingRCTrackFlat(
-    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement, SupportType supportType)
-{
-    if (trackElement.HasChain())
-    {
-        switch (direction)
-        {
-            case 0:
-            case 2:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(27131), { 0, 0, height + 24 },
-                    { { 0, 6, height + 22 }, { 32, 20, 1 } });
-                break;
-            case 1:
-            case 3:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(27132), { 0, 0, height + 24 },
-                    { { 0, 6, height + 22 }, { 32, 20, 1 } });
-                break;
-        }
-    }
-    else
-    {
-        switch (direction)
-        {
-            case 0:
-            case 2:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(27129), { 0, 0, height + 24 },
-                    { { 0, 6, height + 22 }, { 32, 20, 1 } });
-                break;
-            case 1:
-            case 3:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(27130), { 0, 0, height + 24 },
-                    { { 0, 6, height + 22 }, { 32, 20, 1 } });
-                break;
-        }
-    }
-
-    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
-    if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-    {
-        MetalASupportsPaintSetup(
-            session, supportType.metal, MetalSupportPlace::centre, 0, height + kSupportHeight, session.SupportColours);
-    }
-
-    PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
-    PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
-}
+/** rct2: 0x007C6FF4 (Flat) — see paint/track_pieces/Flat.h::trackPaintFlatInverted */
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kInvertedFlyingRcFlatChainSprites = { 27131, 27132, 27131,
+                                                                                                        27132 };
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kInvertedFlyingRcFlatSprites = { 27129, 27130, 27129, 27130 };
 
 /** rct2: 0x007C7244, 0x007C7254, 0x007C7264 */
 static void InvertedFlyingRCTrackStation(
@@ -8917,7 +8870,9 @@ TrackPaintFunction GetTrackPaintFunctionFlyingRCInverted(TrackElemType trackType
     switch (trackType)
     {
         case TrackElemType::flat:
-            return InvertedFlyingRCTrackFlat;
+            return OpenRCT2::trackPaintFlatInverted<
+                kInvertedFlyingRcFlatChainSprites, kInvertedFlyingRcFlatSprites, 24, 22, 1, kSupportHeight,
+                kDefaultGeneralSupportHeight, kTunnelGroup>;
         case TrackElemType::endStation:
         case TrackElemType::beginStation:
         case TrackElemType::middleStation:

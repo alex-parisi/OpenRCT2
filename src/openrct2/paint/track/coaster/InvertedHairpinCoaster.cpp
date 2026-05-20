@@ -18,72 +18,18 @@
 #include "../../tile_element/Segment.h"
 #include "../../track/Segment.h"
 #include "../../track/Support.h"
+#include "../../track_pieces/Flat.h"
 
 using namespace OpenRCT2;
 
 static constexpr TunnelGroup kTunnelGroup = TunnelGroup::Standard;
 static constexpr uint8_t kSupportHeight = 30;
 
-/** rct2: 0x00890CB4 */
-static void InvertedHairpinRCTrackFlat(
-    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement, SupportType supportType)
-{
-    if (trackElement.HasChain())
-    {
-        switch (direction)
-        {
-            case 0:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(17030), { 0, 0, height + 24 },
-                    { { 0, 6, height + 22 }, { 32, 20, 1 } });
-                break;
-            case 1:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(17031), { 0, 0, height + 24 },
-                    { { 0, 6, height + 22 }, { 32, 20, 1 } });
-                break;
-            case 2:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(17032), { 0, 0, height + 24 },
-                    { { 0, 6, height + 22 }, { 32, 20, 1 } });
-                break;
-            case 3:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(17033), { 0, 0, height + 24 },
-                    { { 0, 6, height + 22 }, { 32, 20, 1 } });
-                break;
-        }
-    }
-    else
-    {
-        switch (direction)
-        {
-            case 0:
-            case 2:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(17026), { 0, 0, height + 24 },
-                    { { 0, 6, height + 22 }, { 32, 20, 1 } });
-                break;
-            case 1:
-            case 3:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(17027), { 0, 0, height + 24 },
-                    { { 0, 6, height + 22 }, { 32, 20, 1 } });
-                break;
-        }
-    }
-
-    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
-    if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-    {
-        MetalASupportsPaintSetup(
-            session, supportType.metal, MetalSupportPlace::centre, 0, height + kSupportHeight, session.SupportColours);
-    }
-
-    PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
-    PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
-}
+/** rct2: 0x00890CB4 (Flat) — see paint/track_pieces/Flat.h::trackPaintFlatInverted */
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kInvertedHairpinRcFlatChainSprites = { 17030, 17031, 17032,
+                                                                                                         17033 };
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kInvertedHairpinRcFlatSprites = { 17026, 17027, 17026,
+                                                                                                    17027 };
 
 /** rct2: 0x00890D84, 0x00890D94, 0x00890DA4 */
 static void InvertedHairpinRCTrackStation(
@@ -1385,7 +1331,9 @@ TrackPaintFunction GetTrackPaintFunctionInvertedHairpinRC(TrackElemType trackTyp
     switch (trackType)
     {
         case TrackElemType::flat:
-            return InvertedHairpinRCTrackFlat;
+            return OpenRCT2::trackPaintFlatInverted<
+                kInvertedHairpinRcFlatChainSprites, kInvertedHairpinRcFlatSprites, 24, 22, 1, kSupportHeight,
+                kDefaultGeneralSupportHeight, kTunnelGroup>;
         case TrackElemType::endStation:
         case TrackElemType::beginStation:
         case TrackElemType::middleStation:
