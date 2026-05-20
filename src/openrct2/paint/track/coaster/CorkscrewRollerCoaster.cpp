@@ -18,6 +18,7 @@
 #include "../../tile_element/Segment.h"
 #include "../../track/Segment.h"
 #include "../../track/Support.h"
+#include "../../track_pieces/Flat.h"
 #include "../../track_pieces/QuarterHelix.h"
 
 using namespace OpenRCT2;
@@ -67,69 +68,10 @@ static constexpr std::array<std::array<int8_t, kNumOrthogonalDirections>, kQuart
 static constexpr std::array<std::array<int8_t, kNumOrthogonalDirections>, kQuarterHelixSequenceCount>
     kRightQuarterBankedHelixSupportHeights = { { { 4, 5, 4, 0 }, {}, {}, {}, {}, {}, { 8, 6, 6, 10 } } };
 
-/** rct2: 0x008A7AF8 */
-static void CorkscrewRCTrackFlat(
-    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement, SupportType supportType)
-{
-    if (trackElement.HasChain())
-    {
-        switch (direction)
-        {
-            case 0:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(16226), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 1:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(16227), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 2:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(16228), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 3:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(16229), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-        }
-        if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-        {
-            MetalASupportsPaintSetupRotated(
-                session, supportType.metal, MetalSupportPlace::centre, direction, 0, height, session.SupportColours);
-        }
-    }
-    else
-    {
-        switch (direction)
-        {
-            case 0:
-            case 2:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(16224), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 1:
-            case 3:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(16225), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-        }
-        if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-        {
-            MetalASupportsPaintSetupRotated(
-                session, supportType.metal, MetalSupportPlace::centre, direction, 0, height, session.SupportColours);
-        }
-    }
-    PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
-    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
-}
+/** rct2: 0x008A7AF8 (Flat) — see paint/track_pieces/Flat.h::trackPaintFlat */
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kCorkscrewRcFlatChainSprites = { 16226, 16227, 16228,
+                                                                                                   16229 };
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kCorkscrewRcFlatSprites = { 16224, 16225, 16224, 16225 };
 
 /** rct2: 0x008A7D68, 0x008A7D78, 0x008A7D88 */
 static void CorkscrewRCTrackStation(
@@ -20428,7 +20370,9 @@ TrackPaintFunction GetTrackPaintFunctionCorkscrewRC(TrackElemType trackType)
     switch (trackType)
     {
         case TrackElemType::flat:
-            return CorkscrewRCTrackFlat;
+            return OpenRCT2::trackPaintFlat<
+                kCorkscrewRcFlatChainSprites, kCorkscrewRcFlatSprites, OpenRCT2::FlatTrackSupportStyle::metalRotated, 0,
+                kTunnelGroup>;
         case TrackElemType::endStation:
         case TrackElemType::beginStation:
         case TrackElemType::middleStation:

@@ -18,6 +18,7 @@
 #include "../../tile_element/Segment.h"
 #include "../../track/Segment.h"
 #include "../../track/Support.h"
+#include "../../track_pieces/Flat.h"
 #include "../../track_pieces/QuarterHelix.h"
 
 using namespace OpenRCT2;
@@ -45,64 +46,9 @@ static constexpr std::array<std::array<int8_t, kNumOrthogonalDirections>, kQuart
 static constexpr std::array<std::array<int8_t, kNumOrthogonalDirections>, kQuarterHelixSequenceCount>
     kRightQuarterBankedHelixSupportHeights = { { { 5, 9, 8, 10 }, {}, {}, {}, {}, {}, { 11, 14, 14, 10 } } };
 
-/** rct2: 0x008A4ABC */
-static void MiniRCTrackFlat(
-    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement, SupportType supportType)
-{
-    if (trackElement.HasChain())
-    {
-        switch (direction)
-        {
-            case 0:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(19044), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 1:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(19045), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 2:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(19046), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 3:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(19047), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-        }
-    }
-    else
-    {
-        switch (direction)
-        {
-            case 0:
-            case 2:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(18738), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 1:
-            case 3:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(18739), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-        }
-    }
-    if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-    {
-        MetalASupportsPaintSetupRotated(
-            session, supportType.metal, MetalSupportPlace::centre, direction, 6, height, session.SupportColours);
-    }
-    PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
-    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
-}
+/** rct2: 0x008A4ABC (Flat) — see paint/track_pieces/Flat.h::trackPaintFlat */
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kMiniRcFlatChainSprites = { 19044, 19045, 19046, 19047 };
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kMiniRcFlatSprites = { 18738, 18739, 18738, 18739 };
 
 static void MiniRCTrackStation(
     PaintSession& session, const Ride& ride, [[maybe_unused]] uint8_t trackSequence, uint8_t direction, int32_t height,
@@ -8998,7 +8944,8 @@ TrackPaintFunction GetTrackPaintFunctionMiniRC(TrackElemType trackType)
     switch (trackType)
     {
         case TrackElemType::flat:
-            return MiniRCTrackFlat;
+            return OpenRCT2::trackPaintFlat<
+                kMiniRcFlatChainSprites, kMiniRcFlatSprites, OpenRCT2::FlatTrackSupportStyle::metalRotated, 6, kTunnelGroup>;
         case TrackElemType::endStation:
         case TrackElemType::beginStation:
         case TrackElemType::middleStation:
