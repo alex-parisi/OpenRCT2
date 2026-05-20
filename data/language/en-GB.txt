@@ -3829,3 +3829,6 @@ STR_7029    :Quarter Helix down
 STR_7030    :{WINDOW_COLOUR_2}Guests entertained: {BLACK}{COMMA32}
 STR_7031    :Use A* pathfinding (experimental)
 STR_7032    :Guests and staff navigate using an A* search instead of the classic heuristic. Experimental; may affect performance with many peeps.
+STR_7033    :Spread guests across wide paths
+STR_7034    :Guests on paths wider than one tile drift into emptier parallel lanes, instead of all walking the same line
+STR_7035    :Pathfinding
