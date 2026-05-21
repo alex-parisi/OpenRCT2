@@ -31,6 +31,15 @@ namespace OpenRCT2
         metalRotated,
     };
 
+    // Which platform helper trackPaintStation calls. drawStation2 → TrackPaintUtilDrawStation2 (fence
+    // offsets 9/11); narrowPlatform → TrackPaintUtilDrawNarrowStationPlatform (z offset 9). Both use
+    // StationBaseType::a with base offset 0 for the rides that share this skeleton.
+    enum class StationDrawStyle : uint8_t
+    {
+        drawStation2,
+        narrowPlatform,
+    };
+
     // Data-driven painter for the straight Flat track piece.
     //
     // Historically every ride type carried its own ~50-line hand-written FlatTrack function that
@@ -418,9 +427,11 @@ namespace OpenRCT2
     // kBlockBrakeImages points at the [direction][isClosed] block-brake table, or is nullptr for rides
     // (e.g. Mine Ride) whose station has no block-brake variant. kSideUsesRideMetal selects between the
     // ride's own supportType.metal and the fixed kSideMetal for the platform's side-by-side supports.
+    // kDrawStyle selects the platform helper (see StationDrawStyle).
     template<
         const std::array<ImageIndex, kNumOrthogonalDirections>& kPlainSprites, const int8_t kSupportOffset,
-        const bool kSideUsesRideMetal, const MetalSupportType kSideMetal, const uint32_t (*kBlockBrakeImages)[2]>
+        const bool kSideUsesRideMetal, const MetalSupportType kSideMetal, const uint32_t (*kBlockBrakeImages)[2],
+        const StationDrawStyle kDrawStyle = StationDrawStyle::drawStation2>
     void trackPaintStation(
         PaintSession& session, const Ride& ride, [[maybe_unused]] const uint8_t trackSequence, const Direction direction,
         const int32_t height, const OpenRCT2::TrackElement& trackElement, const SupportType supportType)
@@ -448,7 +459,18 @@ namespace OpenRCT2
                 { { 0, 6, height + 3 }, { 32, 20, 1 } });
         }
 
-        if (TrackPaintUtilDrawStation2(session, ride, direction, height, trackElement, StationBaseType::a, 0, 9, 11))
+        bool drewPlatform;
+        if constexpr (kDrawStyle == StationDrawStyle::narrowPlatform)
+        {
+            drewPlatform = TrackPaintUtilDrawNarrowStationPlatform(
+                session, ride, direction, height, 9, trackElement, StationBaseType::a, 0);
+        }
+        else
+        {
+            drewPlatform = TrackPaintUtilDrawStation2(
+                session, ride, direction, height, trackElement, StationBaseType::a, 0, 9, 11);
+        }
+        if (drewPlatform)
         {
             if constexpr (kSideUsesRideMetal)
             {

@@ -74,45 +74,8 @@ static constexpr std::array<std::array<int8_t, kNumOrthogonalDirections>, kQuart
 static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kTwisterRcFlatChainSprites = { 17486, 17487, 17488, 17489 };
 static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kTwisterRcFlatSprites = { 17146, 17147, 17146, 17147 };
 
-static void TwisterRCTrackStation(
-    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement, SupportType supportType)
-{
-    static constexpr ImageIndex imageIds[4] = {
-        17154,
-        17155,
-        17154,
-        17155,
-    };
-
-    if (trackElement.GetTrackType() == TrackElemType::endStation)
-    {
-        bool isClosed = trackElement.IsBrakeClosed();
-        PaintAddImageAsParentRotated(
-            session, direction, session.TrackColours.WithIndex(kTwisterRCBlockBrakeImages[direction][isClosed]),
-            { 0, 0, height }, { { 0, 6, height + 3 }, { 32, 20, 1 } });
-    }
-    else
-    {
-        PaintAddImageAsParentRotated(
-            session, direction, session.TrackColours.WithIndex(imageIds[direction]), { 0, 0, height },
-            { { 0, 6, height + 3 }, { 32, 20, 1 } });
-    }
-
-    if (TrackPaintUtilDrawNarrowStationPlatform(session, ride, direction, height, 9, trackElement, StationBaseType::a, 0))
-    {
-        DrawSupportsSideBySide(session, direction, height, session.SupportColours, supportType.metal);
-    }
-    else if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-    {
-        MetalASupportsPaintSetupRotated(
-            session, supportType.metal, MetalSupportPlace::centre, direction, 0, height, session.SupportColours);
-    }
-
-    TrackPaintUtilDrawStationTunnel(session, direction, height);
-    PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
-}
+/** Station — see paint/track_pieces/Flat.h::trackPaintStation (narrow platform) */
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kTwisterRcStationSprites = { 17154, 17155, 17154, 17155 };
 
 /** 25DegUp — see paint/track_pieces/Flat.h::trackPaint25DegUp */
 static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kTwisterRc25DegUpChainSprites = { 17498, 17499, 17500,
@@ -19825,7 +19788,9 @@ TrackPaintFunction GetTrackPaintFunctionTwisterRC(TrackElemType trackType)
         case TrackElemType::endStation:
         case TrackElemType::beginStation:
         case TrackElemType::middleStation:
-            return TwisterRCTrackStation;
+            return OpenRCT2::trackPaintStation<
+                kTwisterRcStationSprites, 0, true, MetalSupportType::tubes, kTwisterRCBlockBrakeImages,
+                OpenRCT2::StationDrawStyle::narrowPlatform>;
         case TrackElemType::up25:
             return OpenRCT2::trackPaint25DegUp<
                 kTwisterRc25DegUpChainSprites, kTwisterRc25DegUpSprites, OpenRCT2::FlatTrackSupportStyle::metal, 8, 56,
