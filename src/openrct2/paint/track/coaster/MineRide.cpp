@@ -37,33 +37,8 @@ static constexpr std::array<std::array<int8_t, kNumOrthogonalDirections>, kQuart
 /** rct2: 0x008B08D0 (Flat) — see paint/track_pieces/Flat.h::trackPaintFlat (no lift-chain variant) */
 static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kMineRideFlatSprites = { 19338, 19339, 19338, 19339 };
 
-static void MineRideTrackStation(
-    PaintSession& session, const Ride& ride, [[maybe_unused]] uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement, SupportType supportType)
-{
-    static constexpr ImageIndex imageIds[4] = {
-        19338,
-        19339,
-        19338,
-        19339,
-    };
-
-    PaintAddImageAsParentRotated(
-        session, direction, session.TrackColours.WithIndex(imageIds[direction]), { 0, 0, height },
-        { { 0, 6, height + 3 }, { 32, 20, 1 } });
-    if (TrackPaintUtilDrawStation2(session, ride, direction, height, trackElement, StationBaseType::a, 0, 9, 11))
-    {
-        DrawSupportsSideBySide(session, direction, height, session.SupportColours, MetalSupportType::tubes);
-    }
-    else if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-    {
-        MetalASupportsPaintSetupRotated(
-            session, supportType.metal, MetalSupportPlace::centre, direction, 6, height, session.SupportColours);
-    }
-    TrackPaintUtilDrawStationTunnel(session, direction, height);
-    PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
-}
+/** Station — see paint/track_pieces/Flat.h::trackPaintStation (no block-brake variant) */
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kMineRideStationSprites = { 19338, 19339, 19338, 19339 };
 
 /** rct2: 0x008B08E0 (25DegUp) — see paint/track_pieces/Flat.h::trackPaint25DegUp (no lift-chain variant) */
 static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kMineRide25DegUpSprites = { 19388, 19389, 19390, 19391 };
@@ -5359,7 +5334,7 @@ TrackPaintFunction GetTrackPaintFunctionMineRide(TrackElemType trackType)
         case TrackElemType::endStation:
         case TrackElemType::beginStation:
         case TrackElemType::middleStation:
-            return MineRideTrackStation;
+            return OpenRCT2::trackPaintStation<kMineRideStationSprites, 6, false, MetalSupportType::tubes, nullptr>;
         case TrackElemType::up25:
             return OpenRCT2::trackPaint25DegUp<
                 kMineRide25DegUpSprites, kMineRide25DegUpSprites, OpenRCT2::FlatTrackSupportStyle::metalRotated, 14, 56,

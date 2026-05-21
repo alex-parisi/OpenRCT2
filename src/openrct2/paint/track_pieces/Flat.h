@@ -407,4 +407,66 @@ namespace OpenRCT2
         }
         PaintUtilSetGeneralSupportHeight(session, height + kGeneralSupportHeightExtra);
     }
+
+    // Data-driven painter for the Station piece of upright rides built on TrackPaintUtilDrawStation2.
+    // The shared shape: an optional end-station block-brake sprite over a plain alternating rail sprite,
+    // the standard DrawStation2(StationBaseType::a, 0, 9, 11) platform with side-by-side supports (or a
+    // rotated centre support when off-platform), the station tunnel, all-segments and the default general
+    // support height. Rides vary only in their sprites, the side-by-side metal type, and the rotated
+    // centre-support offset.
+    //
+    // kBlockBrakeImages points at the [direction][isClosed] block-brake table, or is nullptr for rides
+    // (e.g. Mine Ride) whose station has no block-brake variant. kSideUsesRideMetal selects between the
+    // ride's own supportType.metal and the fixed kSideMetal for the platform's side-by-side supports.
+    template<
+        const std::array<ImageIndex, kNumOrthogonalDirections>& kPlainSprites, const int8_t kSupportOffset,
+        const bool kSideUsesRideMetal, const MetalSupportType kSideMetal, const uint32_t (*kBlockBrakeImages)[2]>
+    void trackPaintStation(
+        PaintSession& session, const Ride& ride, [[maybe_unused]] const uint8_t trackSequence, const Direction direction,
+        const int32_t height, const OpenRCT2::TrackElement& trackElement, const SupportType supportType)
+    {
+        if constexpr (kBlockBrakeImages != nullptr)
+        {
+            if (trackElement.GetTrackType() == TrackElemType::endStation)
+            {
+                const bool isClosed = trackElement.IsBrakeClosed();
+                PaintAddImageAsParentRotated(
+                    session, direction, session.TrackColours.WithIndex(kBlockBrakeImages[direction][isClosed]),
+                    { 0, 0, height }, { { 0, 6, height + 3 }, { 32, 20, 1 } });
+            }
+            else
+            {
+                PaintAddImageAsParentRotated(
+                    session, direction, session.TrackColours.WithIndex(kPlainSprites[direction]), { 0, 0, height },
+                    { { 0, 6, height + 3 }, { 32, 20, 1 } });
+            }
+        }
+        else
+        {
+            PaintAddImageAsParentRotated(
+                session, direction, session.TrackColours.WithIndex(kPlainSprites[direction]), { 0, 0, height },
+                { { 0, 6, height + 3 }, { 32, 20, 1 } });
+        }
+
+        if (TrackPaintUtilDrawStation2(session, ride, direction, height, trackElement, StationBaseType::a, 0, 9, 11))
+        {
+            if constexpr (kSideUsesRideMetal)
+            {
+                DrawSupportsSideBySide(session, direction, height, session.SupportColours, supportType.metal);
+            }
+            else
+            {
+                DrawSupportsSideBySide(session, direction, height, session.SupportColours, kSideMetal);
+            }
+        }
+        else if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
+        {
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::centre, direction, kSupportOffset, height,
+                session.SupportColours);
+        }
+        TrackPaintUtilDrawStationTunnel(session, direction, height);
+        PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
+        PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
+    }
 } // namespace OpenRCT2

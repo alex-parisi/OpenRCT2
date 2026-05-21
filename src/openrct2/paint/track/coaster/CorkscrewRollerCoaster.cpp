@@ -72,44 +72,8 @@ static constexpr std::array<std::array<int8_t, kNumOrthogonalDirections>, kQuart
 static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kCorkscrewRcFlatChainSprites = { 16226, 16227, 16228, 16229 };
 static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kCorkscrewRcFlatSprites = { 16224, 16225, 16224, 16225 };
 
-/** rct2: 0x008A7D68, 0x008A7D78, 0x008A7D88 */
-static void CorkscrewRCTrackStation(
-    PaintSession& session, const Ride& ride, [[maybe_unused]] uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement, SupportType supportType)
-{
-    static constexpr ImageIndex kImageIds[4] = {
-        16236,
-        16237,
-        16236,
-        16237,
-    };
-
-    if (trackElement.GetTrackType() == TrackElemType::endStation)
-    {
-        bool isClosed = trackElement.IsBrakeClosed();
-        PaintAddImageAsParentRotated(
-            session, direction, session.TrackColours.WithIndex(kCorkscrewRcBlockBrakeImages[direction][isClosed]),
-            { 0, 0, height }, { { 0, 6, height + 3 }, { 32, 20, 1 } });
-    }
-    else
-    {
-        PaintAddImageAsParentRotated(
-            session, direction, session.TrackColours.WithIndex(kImageIds[direction]), { 0, 0, height },
-            { { 0, 6, height + 3 }, { 32, 20, 1 } });
-    }
-    if (TrackPaintUtilDrawStation2(session, ride, direction, height, trackElement, StationBaseType::a, 0, 9, 11))
-    {
-        DrawSupportsSideBySide(session, direction, height, session.SupportColours, supportType.metal);
-    }
-    else if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-    {
-        MetalASupportsPaintSetupRotated(
-            session, supportType.metal, MetalSupportPlace::centre, direction, 0, height, session.SupportColours);
-    }
-    TrackPaintUtilDrawStationTunnel(session, direction, height);
-    PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
-}
+/** rct2: 0x008A7D68, 0x008A7D78, 0x008A7D88 (Station) — see paint/track_pieces/Flat.h::trackPaintStation */
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kCorkscrewRcStationSprites = { 16236, 16237, 16236, 16237 };
 
 /** rct2: 0x008A7B08 (25DegUp) — see paint/track_pieces/Flat.h::trackPaint25DegUp */
 static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kCorkscrewRc25DegUpChainSprites = { 16314, 16315, 16316,
@@ -20161,7 +20125,8 @@ TrackPaintFunction GetTrackPaintFunctionCorkscrewRC(TrackElemType trackType)
         case TrackElemType::endStation:
         case TrackElemType::beginStation:
         case TrackElemType::middleStation:
-            return CorkscrewRCTrackStation;
+            return OpenRCT2::trackPaintStation<
+                kCorkscrewRcStationSprites, 0, true, MetalSupportType::tubes, kCorkscrewRcBlockBrakeImages>;
         case TrackElemType::up25:
             return OpenRCT2::trackPaint25DegUp<
                 kCorkscrewRc25DegUpChainSprites, kCorkscrewRc25DegUpSprites, OpenRCT2::FlatTrackSupportStyle::metalRotated, 8,
