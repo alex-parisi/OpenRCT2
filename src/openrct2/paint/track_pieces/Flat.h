@@ -241,4 +241,134 @@ namespace OpenRCT2
             session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
         PaintUtilSetGeneralSupportHeight(session, height + kGeneralSupportHeightExtra);
     }
+
+    // Data-driven painter for the 25-degree-up-to-flat transition piece of upright rides. Identical
+    // to trackPaintFlatTo25DegUp except the transition tunnel: a flat tunnel below the tile (height-8)
+    // for directions 0/3 and a FlatTo25Deg tunnel above it (height+8) for 1/2.
+    template<
+        const std::array<ImageIndex, kNumOrthogonalDirections>& kChainSprites,
+        const std::array<ImageIndex, kNumOrthogonalDirections>& kSprites, const FlatTrackSupportStyle kSupportStyle,
+        const int8_t kSupportOffset, const int32_t kGeneralSupportHeightExtra, const TunnelGroup kTunnelGroup>
+    void trackPaint25DegUpToFlat(
+        PaintSession& session, const Ride& ride, const uint8_t trackSequence, const Direction direction, const int32_t height,
+        const OpenRCT2::TrackElement& trackElement, const SupportType supportType)
+    {
+        const auto& sprites = trackElement.HasChain() ? kChainSprites : kSprites;
+        PaintAddImageAsParentRotated(
+            session, direction, session.TrackColours.WithIndex(sprites[direction]), { 0, 0, height },
+            { { 0, 6, height }, { 32, 20, 3 } });
+
+        if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
+        {
+            if constexpr (kSupportStyle == FlatTrackSupportStyle::metalRotated)
+            {
+                MetalASupportsPaintSetupRotated(
+                    session, supportType.metal, MetalSupportPlace::centre, direction, kSupportOffset, height,
+                    session.SupportColours);
+            }
+            else if constexpr (kSupportStyle == FlatTrackSupportStyle::metal)
+            {
+                MetalASupportsPaintSetup(
+                    session, supportType.metal, MetalSupportPlace::centre, kSupportOffset, height, session.SupportColours);
+            }
+        }
+
+        if (direction == 0 || direction == 3)
+        {
+            PaintUtilPushTunnelRotated(session, direction, height - 8, kTunnelGroup, TunnelSubType::Flat);
+        }
+        else
+        {
+            PaintUtilPushTunnelRotated(session, direction, height + 8, kTunnelGroup, TunnelSubType::FlatTo25Deg);
+        }
+
+        PaintUtilSetSegmentSupportHeight(
+            session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
+        PaintUtilSetGeneralSupportHeight(session, height + kGeneralSupportHeightExtra);
+    }
+
+    // Data-driven painter for the flat-to-25-degree-up transition of inverted/hung-track rides.
+    // Identical to trackPaint25DegUpInverted (raised sprite, segment-before-supports, the per-direction
+    // side support place switch painted with the non-rotated helper) except the transition tunnel: a
+    // flat tunnel at tile height for directions 0/3 and a SlopeEnd (also at tile height) for 1/2.
+    template<
+        const std::array<ImageIndex, kNumOrthogonalDirections>& kChainSprites,
+        const std::array<ImageIndex, kNumOrthogonalDirections>& kSprites, const int32_t kImageZOffset,
+        const int32_t kBoundBoxZOffset, const int32_t kSupportHeightExtra, const int32_t kGeneralSupportHeightExtra,
+        const TunnelGroup kTunnelGroup>
+    void trackPaintFlatTo25DegUpInverted(
+        PaintSession& session, const Ride& ride, const uint8_t trackSequence, const Direction direction, const int32_t height,
+        const OpenRCT2::TrackElement& trackElement, const SupportType supportType)
+    {
+        const auto& sprites = trackElement.HasChain() ? kChainSprites : kSprites;
+        PaintAddImageAsParentRotated(
+            session, direction, session.TrackColours.WithIndex(sprites[direction]), { 0, 0, height + kImageZOffset },
+            { { 0, 6, height + kBoundBoxZOffset }, { 32, 20, 3 } });
+
+        PaintUtilSetSegmentSupportHeight(
+            session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
+        if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
+        {
+            static constexpr MetalSupportPlace kPlaces[kNumOrthogonalDirections] = {
+                MetalSupportPlace::topRightSide,
+                MetalSupportPlace::bottomRightSide,
+                MetalSupportPlace::bottomLeftSide,
+                MetalSupportPlace::topLeftSide,
+            };
+            MetalASupportsPaintSetup(
+                session, supportType.metal, kPlaces[direction], 0, height + kSupportHeightExtra, session.SupportColours);
+        }
+
+        if (direction == 0 || direction == 3)
+        {
+            PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
+        }
+        else
+        {
+            PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::SlopeEnd);
+        }
+        PaintUtilSetGeneralSupportHeight(session, height + kGeneralSupportHeightExtra);
+    }
+
+    // Data-driven painter for the 25-degree-up-to-flat transition of inverted/hung-track rides. Same
+    // skeleton as trackPaintFlatTo25DegUpInverted, but the transition tunnel is a flat tunnel below the
+    // tile (height-8) for directions 0/3 and a FlatTo25Deg tunnel above it (height+8) for 1/2.
+    template<
+        const std::array<ImageIndex, kNumOrthogonalDirections>& kChainSprites,
+        const std::array<ImageIndex, kNumOrthogonalDirections>& kSprites, const int32_t kImageZOffset,
+        const int32_t kBoundBoxZOffset, const int32_t kSupportHeightExtra, const int32_t kGeneralSupportHeightExtra,
+        const TunnelGroup kTunnelGroup>
+    void trackPaint25DegUpToFlatInverted(
+        PaintSession& session, const Ride& ride, const uint8_t trackSequence, const Direction direction, const int32_t height,
+        const OpenRCT2::TrackElement& trackElement, const SupportType supportType)
+    {
+        const auto& sprites = trackElement.HasChain() ? kChainSprites : kSprites;
+        PaintAddImageAsParentRotated(
+            session, direction, session.TrackColours.WithIndex(sprites[direction]), { 0, 0, height + kImageZOffset },
+            { { 0, 6, height + kBoundBoxZOffset }, { 32, 20, 3 } });
+
+        PaintUtilSetSegmentSupportHeight(
+            session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
+        if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
+        {
+            static constexpr MetalSupportPlace kPlaces[kNumOrthogonalDirections] = {
+                MetalSupportPlace::topRightSide,
+                MetalSupportPlace::bottomRightSide,
+                MetalSupportPlace::bottomLeftSide,
+                MetalSupportPlace::topLeftSide,
+            };
+            MetalASupportsPaintSetup(
+                session, supportType.metal, kPlaces[direction], 0, height + kSupportHeightExtra, session.SupportColours);
+        }
+
+        if (direction == 0 || direction == 3)
+        {
+            PaintUtilPushTunnelRotated(session, direction, height - 8, kTunnelGroup, TunnelSubType::Flat);
+        }
+        else
+        {
+            PaintUtilPushTunnelRotated(session, direction, height + 8, kTunnelGroup, TunnelSubType::FlatTo25Deg);
+        }
+        PaintUtilSetGeneralSupportHeight(session, height + kGeneralSupportHeightExtra);
+    }
 } // namespace OpenRCT2

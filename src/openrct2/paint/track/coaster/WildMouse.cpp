@@ -369,35 +369,15 @@ static void WildMouseTrack60DegUpTo25DegUp(
 }
 
 /** rct2: 0x0078B244 */
-static void WildMouseTrack25DegUpToFlat(
-    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement, SupportType supportType)
-{
-    static constexpr uint32_t imageIds[4][2] = {
-        { SPR_WILD_MOUSE_25_DEG_TO_FLAT_SW_NE, SPR_WILD_MOUSE_25_DEG_TO_FLAT_CHAIN_SW_NE },
-        { SPR_WILD_MOUSE_25_DEG_TO_FLAT_NW_SE, SPR_WILD_MOUSE_25_DEG_TO_FLAT_CHAIN_NW_SE },
-        { SPR_WILD_MOUSE_25_DEG_TO_FLAT_NE_SW, SPR_WILD_MOUSE_25_DEG_TO_FLAT_CHAIN_NE_SW },
-        { SPR_WILD_MOUSE_25_DEG_TO_FLAT_SE_NW, SPR_WILD_MOUSE_25_DEG_TO_FLAT_CHAIN_SE_NW },
-    };
-
-    uint8_t isChained = trackElement.HasChain() ? 1 : 0;
-    auto imageId = session.TrackColours.WithIndex(imageIds[direction][isChained]);
-    PaintAddImageAsParentRotated(session, direction, imageId, { 0, 0, height }, { { 0, 6, height }, { 32, 20, 3 } });
-    if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-    {
-        MetalASupportsPaintSetup(session, supportType.metal, MetalSupportPlace::centre, -7, height, session.SupportColours);
-    }
-    if (direction == 0 || direction == 3)
-    {
-        PaintUtilPushTunnelRotated(session, direction, height - 8, kTunnelGroup, TunnelSubType::Flat);
-    }
-    else
-    {
-        PaintUtilPushTunnelRotated(session, direction, height + 8, kTunnelGroup, TunnelSubType::FlatTo25Deg);
-    }
-    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 40);
-}
+/** 25DegUpToFlat — see paint/track_pieces/Flat.h::trackPaint25DegUpToFlat */
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kWildMouse25DegUpToFlatChainSprites = {
+    SPR_WILD_MOUSE_25_DEG_TO_FLAT_CHAIN_SW_NE, SPR_WILD_MOUSE_25_DEG_TO_FLAT_CHAIN_NW_SE,
+    SPR_WILD_MOUSE_25_DEG_TO_FLAT_CHAIN_NE_SW, SPR_WILD_MOUSE_25_DEG_TO_FLAT_CHAIN_SE_NW
+};
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kWildMouse25DegUpToFlatSprites = {
+    SPR_WILD_MOUSE_25_DEG_TO_FLAT_SW_NE, SPR_WILD_MOUSE_25_DEG_TO_FLAT_NW_SE, SPR_WILD_MOUSE_25_DEG_TO_FLAT_NE_SW,
+    SPR_WILD_MOUSE_25_DEG_TO_FLAT_SE_NW
+};
 
 /** rct2: 0x0078B254 */
 static void WildMouseTrack25DegDown(
@@ -422,7 +402,9 @@ static void WildMouseTrackFlatTo25DegDown(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
     const TrackElement& trackElement, SupportType supportType)
 {
-    WildMouseTrack25DegUpToFlat(session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
+    OpenRCT2::trackPaint25DegUpToFlat<
+        kWildMouse25DegUpToFlatChainSprites, kWildMouse25DegUpToFlatSprites, OpenRCT2::FlatTrackSupportStyle::metal, -7, 40,
+        kTunnelGroup>(session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 /** rct2: 0x0078B284 */
@@ -913,7 +895,9 @@ TrackPaintFunction GetTrackPaintFunctionWildMouse(TrackElemType trackType)
         case TrackElemType::up60ToUp25:
             return WildMouseTrack60DegUpTo25DegUp;
         case TrackElemType::up25ToFlat:
-            return WildMouseTrack25DegUpToFlat;
+            return OpenRCT2::trackPaint25DegUpToFlat<
+                kWildMouse25DegUpToFlatChainSprites, kWildMouse25DegUpToFlatSprites, OpenRCT2::FlatTrackSupportStyle::metal, -7,
+                40, kTunnelGroup>;
         case TrackElemType::down25:
             return WildMouseTrack25DegDown;
         case TrackElemType::down60:
