@@ -195,81 +195,11 @@ static void TwisterRCTrack60DegUp(
     PaintUtilSetGeneralSupportHeight(session, height + 104);
 }
 
-static void TwisterRCTrackFlatTo25DegUp(
-    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement, SupportType supportType)
-{
-    if (trackElement.HasChain())
-    {
-        switch (direction)
-        {
-            case 0:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(17490), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 1:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(17491), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 2:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(17492), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 3:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(17493), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-        }
-        if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-        {
-            MetalASupportsPaintSetup(session, supportType.metal, MetalSupportPlace::centre, 3, height, session.SupportColours);
-        }
-    }
-    else
-    {
-        switch (direction)
-        {
-            case 0:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(17196), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 1:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(17197), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 2:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(17198), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 3:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(17199), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-        }
-        if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-        {
-            MetalASupportsPaintSetup(session, supportType.metal, MetalSupportPlace::centre, 3, height, session.SupportColours);
-        }
-    }
-    if (direction == 0 || direction == 3)
-    {
-        PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
-    }
-    else
-    {
-        PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::SlopeEnd);
-    }
-    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 48);
-}
+/** FlatTo25DegUp — see paint/track_pieces/Flat.h::trackPaintFlatTo25DegUp */
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kTwisterRcFlatTo25DegUpChainSprites = { 17490, 17491, 17492,
+                                                                                                          17493 };
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kTwisterRcFlatTo25DegUpSprites = { 17196, 17197, 17198,
+                                                                                                     17199 };
 
 static void TwisterRCTrack25DegUpTo60DegUp(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
@@ -564,7 +494,9 @@ static void TwisterRCTrack25DegDownToFlat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
     const TrackElement& trackElement, SupportType supportType)
 {
-    TwisterRCTrackFlatTo25DegUp(session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
+    OpenRCT2::trackPaintFlatTo25DegUp<
+        kTwisterRcFlatTo25DegUpChainSprites, kTwisterRcFlatTo25DegUpSprites, OpenRCT2::FlatTrackSupportStyle::metal, 3, 48,
+        kTunnelGroup>(session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 static void TwisterRCTrackLeftQuarterTurn5(
@@ -19969,7 +19901,9 @@ TrackPaintFunction GetTrackPaintFunctionTwisterRC(TrackElemType trackType)
         case TrackElemType::up60:
             return TwisterRCTrack60DegUp;
         case TrackElemType::flatToUp25:
-            return TwisterRCTrackFlatTo25DegUp;
+            return OpenRCT2::trackPaintFlatTo25DegUp<
+                kTwisterRcFlatTo25DegUpChainSprites, kTwisterRcFlatTo25DegUpSprites, OpenRCT2::FlatTrackSupportStyle::metal, 3,
+                48, kTunnelGroup>;
         case TrackElemType::up25ToUp60:
             return TwisterRCTrack25DegUpTo60DegUp;
         case TrackElemType::up60ToUp25:

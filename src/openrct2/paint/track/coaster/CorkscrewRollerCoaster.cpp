@@ -195,84 +195,11 @@ static void CorkscrewRCTrack60DegUp(
     PaintUtilSetGeneralSupportHeight(session, height + 104);
 }
 
-/** rct2: 0x008A7B28 */
-static void CorkscrewRCTrackFlatTo25DegUp(
-    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement, SupportType supportType)
-{
-    if (trackElement.HasChain())
-    {
-        switch (direction)
-        {
-            case 0:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(16306), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 1:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(16307), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 2:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(16308), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 3:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(16309), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-        }
-        if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-        {
-            MetalASupportsPaintSetupRotated(
-                session, supportType.metal, MetalSupportPlace::centre, direction, 3, height, session.SupportColours);
-        }
-    }
-    else
-    {
-        switch (direction)
-        {
-            case 0:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(16278), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 1:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(16279), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 2:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(16280), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-            case 3:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours.WithIndex(16281), { 0, 0, height },
-                    { { 0, 6, height }, { 32, 20, 3 } });
-                break;
-        }
-        if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-        {
-            MetalASupportsPaintSetupRotated(
-                session, supportType.metal, MetalSupportPlace::centre, direction, 3, height, session.SupportColours);
-        }
-    }
-    if (direction == 0 || direction == 3)
-    {
-        PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
-    }
-    else
-    {
-        PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::SlopeEnd);
-    }
-    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 48);
-}
+/** rct2: 0x008A7B28 (FlatTo25DegUp) — see paint/track_pieces/Flat.h::trackPaintFlatTo25DegUp */
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kCorkscrewRcFlatTo25DegUpChainSprites = { 16306, 16307, 16308,
+                                                                                                            16309 };
+static constexpr std::array<ImageIndex, kNumOrthogonalDirections> kCorkscrewRcFlatTo25DegUpSprites = { 16278, 16279, 16280,
+                                                                                                       16281 };
 
 /** rct2: 0x008A7B38 */
 static void CorkscrewRCTrack25DegUpTo60DegUp(
@@ -582,7 +509,9 @@ static void CorkscrewRCTrack25DegDownToFlat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
     const TrackElement& trackElement, SupportType supportType)
 {
-    CorkscrewRCTrackFlatTo25DegUp(session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
+    OpenRCT2::trackPaintFlatTo25DegUp<
+        kCorkscrewRcFlatTo25DegUpChainSprites, kCorkscrewRcFlatTo25DegUpSprites, OpenRCT2::FlatTrackSupportStyle::metalRotated,
+        3, 48, kTunnelGroup>(session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 /** rct2: 0x008A7BC8 */
@@ -20311,7 +20240,9 @@ TrackPaintFunction GetTrackPaintFunctionCorkscrewRC(TrackElemType trackType)
         case TrackElemType::up60:
             return CorkscrewRCTrack60DegUp;
         case TrackElemType::flatToUp25:
-            return CorkscrewRCTrackFlatTo25DegUp;
+            return OpenRCT2::trackPaintFlatTo25DegUp<
+                kCorkscrewRcFlatTo25DegUpChainSprites, kCorkscrewRcFlatTo25DegUpSprites,
+                OpenRCT2::FlatTrackSupportStyle::metalRotated, 3, 48, kTunnelGroup>;
         case TrackElemType::up25ToUp60:
             return CorkscrewRCTrack25DegUpTo60DegUp;
         case TrackElemType::up60ToUp25:
