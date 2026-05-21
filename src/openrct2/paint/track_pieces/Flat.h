@@ -163,7 +163,7 @@ namespace OpenRCT2
         const std::array<ImageIndex, kNumOrthogonalDirections>& kChainSprites,
         const std::array<ImageIndex, kNumOrthogonalDirections>& kSprites, const int32_t kImageZOffset,
         const int32_t kBoundBoxZOffset, const int32_t kSupportHeightExtra, const int32_t kGeneralSupportHeightExtra,
-        const TunnelGroup kTunnelGroup>
+        const TunnelGroup kTunnelGroup, const bool kRotatedSupportGraphic = false>
     void trackPaint25DegUpInverted(
         PaintSession& session, const Ride& ride, const uint8_t trackSequence, const Direction direction, const int32_t height,
         const OpenRCT2::TrackElement& trackElement, const SupportType supportType)
@@ -177,14 +177,26 @@ namespace OpenRCT2
             session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
         if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
         {
-            static constexpr MetalSupportPlace kPlaces[kNumOrthogonalDirections] = {
-                MetalSupportPlace::topRightSide,
-                MetalSupportPlace::bottomRightSide,
-                MetalSupportPlace::bottomLeftSide,
-                MetalSupportPlace::topLeftSide,
-            };
-            MetalASupportsPaintSetup(
-                session, supportType.metal, kPlaces[direction], 0, height + kSupportHeightExtra, session.SupportColours);
+            if constexpr (kRotatedSupportGraphic)
+            {
+                // Flying inverted rides rotate the support graphic itself (RotateMetalSupportGraphic) rather
+                // than selecting a pre-rotated side placement; the resulting placement is identical, the
+                // sprite is not.
+                MetalASupportsPaintSetupRotated(
+                    session, supportType.metal, MetalSupportPlace::topRightSide, direction, 0, height + kSupportHeightExtra,
+                    session.SupportColours);
+            }
+            else
+            {
+                static constexpr MetalSupportPlace kPlaces[kNumOrthogonalDirections] = {
+                    MetalSupportPlace::topRightSide,
+                    MetalSupportPlace::bottomRightSide,
+                    MetalSupportPlace::bottomLeftSide,
+                    MetalSupportPlace::topLeftSide,
+                };
+                MetalASupportsPaintSetup(
+                    session, supportType.metal, kPlaces[direction], 0, height + kSupportHeightExtra, session.SupportColours);
+            }
         }
 
         if (direction == 0 || direction == 3)
@@ -295,7 +307,7 @@ namespace OpenRCT2
         const std::array<ImageIndex, kNumOrthogonalDirections>& kChainSprites,
         const std::array<ImageIndex, kNumOrthogonalDirections>& kSprites, const int32_t kImageZOffset,
         const int32_t kBoundBoxZOffset, const int32_t kSupportHeightExtra, const int32_t kGeneralSupportHeightExtra,
-        const TunnelGroup kTunnelGroup>
+        const TunnelGroup kTunnelGroup, const bool kRotatedSupportGraphic = false>
     void trackPaintFlatTo25DegUpInverted(
         PaintSession& session, const Ride& ride, const uint8_t trackSequence, const Direction direction, const int32_t height,
         const OpenRCT2::TrackElement& trackElement, const SupportType supportType)
@@ -309,14 +321,26 @@ namespace OpenRCT2
             session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
         if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
         {
-            static constexpr MetalSupportPlace kPlaces[kNumOrthogonalDirections] = {
-                MetalSupportPlace::topRightSide,
-                MetalSupportPlace::bottomRightSide,
-                MetalSupportPlace::bottomLeftSide,
-                MetalSupportPlace::topLeftSide,
-            };
-            MetalASupportsPaintSetup(
-                session, supportType.metal, kPlaces[direction], 0, height + kSupportHeightExtra, session.SupportColours);
+            if constexpr (kRotatedSupportGraphic)
+            {
+                // Flying inverted rides rotate the support graphic itself (RotateMetalSupportGraphic) rather
+                // than selecting a pre-rotated side placement; the resulting placement is identical, the
+                // sprite is not.
+                MetalASupportsPaintSetupRotated(
+                    session, supportType.metal, MetalSupportPlace::topRightSide, direction, 0, height + kSupportHeightExtra,
+                    session.SupportColours);
+            }
+            else
+            {
+                static constexpr MetalSupportPlace kPlaces[kNumOrthogonalDirections] = {
+                    MetalSupportPlace::topRightSide,
+                    MetalSupportPlace::bottomRightSide,
+                    MetalSupportPlace::bottomLeftSide,
+                    MetalSupportPlace::topLeftSide,
+                };
+                MetalASupportsPaintSetup(
+                    session, supportType.metal, kPlaces[direction], 0, height + kSupportHeightExtra, session.SupportColours);
+            }
         }
 
         if (direction == 0 || direction == 3)
@@ -337,7 +361,7 @@ namespace OpenRCT2
         const std::array<ImageIndex, kNumOrthogonalDirections>& kChainSprites,
         const std::array<ImageIndex, kNumOrthogonalDirections>& kSprites, const int32_t kImageZOffset,
         const int32_t kBoundBoxZOffset, const int32_t kSupportHeightExtra, const int32_t kGeneralSupportHeightExtra,
-        const TunnelGroup kTunnelGroup>
+        const TunnelGroup kTunnelGroup, const bool kRotatedSupportGraphic = false>
     void trackPaint25DegUpToFlatInverted(
         PaintSession& session, const Ride& ride, const uint8_t trackSequence, const Direction direction, const int32_t height,
         const OpenRCT2::TrackElement& trackElement, const SupportType supportType)
@@ -351,14 +375,26 @@ namespace OpenRCT2
             session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
         if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
         {
-            static constexpr MetalSupportPlace kPlaces[kNumOrthogonalDirections] = {
-                MetalSupportPlace::topRightSide,
-                MetalSupportPlace::bottomRightSide,
-                MetalSupportPlace::bottomLeftSide,
-                MetalSupportPlace::topLeftSide,
-            };
-            MetalASupportsPaintSetup(
-                session, supportType.metal, kPlaces[direction], 0, height + kSupportHeightExtra, session.SupportColours);
+            if constexpr (kRotatedSupportGraphic)
+            {
+                // Flying inverted rides rotate the support graphic itself (RotateMetalSupportGraphic) rather
+                // than selecting a pre-rotated side placement; the resulting placement is identical, the
+                // sprite is not.
+                MetalASupportsPaintSetupRotated(
+                    session, supportType.metal, MetalSupportPlace::topRightSide, direction, 0, height + kSupportHeightExtra,
+                    session.SupportColours);
+            }
+            else
+            {
+                static constexpr MetalSupportPlace kPlaces[kNumOrthogonalDirections] = {
+                    MetalSupportPlace::topRightSide,
+                    MetalSupportPlace::bottomRightSide,
+                    MetalSupportPlace::bottomLeftSide,
+                    MetalSupportPlace::topLeftSide,
+                };
+                MetalASupportsPaintSetup(
+                    session, supportType.metal, kPlaces[direction], 0, height + kSupportHeightExtra, session.SupportColours);
+            }
         }
 
         if (direction == 0 || direction == 3)
