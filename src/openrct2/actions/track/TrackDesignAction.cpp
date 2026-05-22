@@ -19,6 +19,7 @@
 #include "../../object/ObjectRepository.h"
 #include "../../ride/RideConstruction.h"
 #include "../../ride/TrackDesign.h"
+#include "../../scenario/Scenario.h"
 #include "../GameActionRunner.h"
 #include "../ride/RideCreateAction.h"
 #include "../ride/RideDemolishAction.h"
@@ -224,7 +225,10 @@ namespace OpenRCT2::GameActions
 
         if (entryIndex != kObjectEntryIndexNull)
         {
-            auto colour = RideGetUnusedPresetVehicleColour(entryIndex);
+            // ScenarioRand (not UtilRand): this runs inside a networked game action's Execute, which is
+            // replayed in lockstep on every client. A non-deterministic pick here gives each client a
+            // different vehicle colour, and colour is part of the entity checksum -> instant desync.
+            auto colour = RideGetUnusedPresetVehicleColour(entryIndex, ScenarioRand());
             auto rideSetVehicleAction = RideSetVehicleAction(ride->id, RideSetVehicleType::rideEntry, entryIndex, colour);
             ExecuteNested(&rideSetVehicleAction, gameState);
         }

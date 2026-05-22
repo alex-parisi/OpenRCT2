@@ -823,7 +823,10 @@ void RideClearBlockedTiles(const Ride& ride);
 OpenRCT2::Staff* RideGetMechanic(const Ride& ride);
 OpenRCT2::Staff* RideGetAssignedMechanic(const Ride& ride);
 VehicleColour RideGetVehicleColour(const Ride& ride, int32_t vehicleIndex);
-int32_t RideGetUnusedPresetVehicleColour(OpenRCT2::ObjectEntryIndex subType);
+// Picks an unused vehicle colour preset. The caller supplies the random value so the determinism
+// contract is explicit at the call site: pass UtilRand() from client-local/UI code, but ScenarioRand()
+// from within a game action's Execute (which runs in lockstep on every client).
+int32_t RideGetUnusedPresetVehicleColour(OpenRCT2::ObjectEntryIndex subType, uint32_t randomValue);
 void RideSetVehicleColoursToRandomPreset(Ride& ride, uint8_t preset_index);
 void RideMeasurementsUpdate();
 void RideBreakdownAddNewsItem(const Ride& ride);

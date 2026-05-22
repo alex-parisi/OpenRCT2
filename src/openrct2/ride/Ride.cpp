@@ -1696,7 +1696,9 @@ void DefaultMusicUpdate(Ride& ride)
         if (musicObj != nullptr)
         {
             auto numTracks = musicObj->GetTrackCount();
-            ride.musicTuneId = static_cast<uint8_t>(UtilRand() % numTracks);
+            // Must use the synced RNG: this runs in the per-tick simulation (Ride::update) on every
+            // client, so a non-deterministic pick would desync ride state across the network.
+            ride.musicTuneId = static_cast<uint8_t>(ScenarioRand() % numTracks);
             ride.musicPosition = 0;
         }
         return;
@@ -1938,7 +1940,7 @@ static bool RideTypeVehicleColourExists(ObjectEntryIndex subType, const VehicleC
     return false;
 }
 
-int32_t RideGetUnusedPresetVehicleColour(ObjectEntryIndex subType)
+int32_t RideGetUnusedPresetVehicleColour(ObjectEntryIndex subType, uint32_t randomValue)
 {
     const auto* rideEntry = GetRideEntryByIndex(subType);
     if (rideEntry == nullptr)
@@ -1964,10 +1966,10 @@ int32_t RideGetUnusedPresetVehicleColour(ObjectEntryIndex subType)
 
     // If all presets have been used, just go with a random preset
     if (unused.empty())
-        return UtilRand() % colourPresets->count;
+        return randomValue % colourPresets->count;
 
     // Choose a random preset from the list of unused presets
-    auto unusedIndex = UtilRand() % unused.size();
+    auto unusedIndex = randomValue % unused.size();
     return unused[unusedIndex];
 }
 
@@ -4974,7 +4976,9 @@ void Ride::updateNumberOfCircuits()
 
 void Ride::setRideEntry(ObjectEntryIndex entryIndex)
 {
-    auto colour = RideGetUnusedPresetVehicleColour(entryIndex);
+    // UtilRand is fine here: the colour is chosen once on the initiating client and travels to all
+    // clients as a serialised parameter of the (top-level) RideSetVehicleAction below.
+    auto colour = RideGetUnusedPresetVehicleColour(entryIndex, UtilRand());
     auto rideSetVehicleAction = GameActions::RideSetVehicleAction(
         id, GameActions::RideSetVehicleType::rideEntry, entryIndex, colour);
     GameActions::Execute(&rideSetVehicleAction, getGameState());
