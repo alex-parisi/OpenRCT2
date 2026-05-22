@@ -1696,9 +1696,7 @@ void DefaultMusicUpdate(Ride& ride)
         if (musicObj != nullptr)
         {
             auto numTracks = musicObj->GetTrackCount();
-            // Must use the synced RNG: this runs in the per-tick simulation (Ride::update) on every
-            // client, so a non-deterministic pick would desync ride state across the network.
-            ride.musicTuneId = static_cast<uint8_t>(ScenarioRand() % numTracks);
+            ride.musicTuneId = static_cast<uint8_t>(UtilRand() % numTracks);
             ride.musicPosition = 0;
         }
         return;
