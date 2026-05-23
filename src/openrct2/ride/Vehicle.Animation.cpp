@@ -402,7 +402,7 @@ void Vehicle::UpdateHauntedHouseOperating()
             invalidate();
             break;
         case 1100:
-            Play3D(SoundId::hauntedHouseScream2, getLocation());
+            Play3D(SoundId::hauntedHouseScream2, getLocation(), MixerGroup::Peep);
             break;
     }
 }
