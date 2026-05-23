@@ -239,6 +239,7 @@ static constexpr float kWindowScrollLocations[][2] = {
             if (widget.type == WidgetType::scroll)
                 result++;
         }
+        assert(static_cast<size_t>(result) < kMaxScrollAreas);
         return result;
     }
 

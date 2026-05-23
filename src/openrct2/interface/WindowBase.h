@@ -38,6 +38,10 @@ namespace OpenRCT2
 {
     constexpr uint8_t kDefaultWindowFlashCountdown = 3;
 
+    // Maximum number of scrollable widgets a single window may declare. Indexed by WindowGetScrollDataIndex;
+    // exceeding it would silently corrupt adjacent WindowBase fields. Bump if a window legitimately needs more.
+    constexpr size_t kMaxScrollAreas = 4;
+
     // TODO: move to Viewport.h?
     struct Focus
     {
@@ -95,7 +99,7 @@ namespace OpenRCT2
          * Set to 3 when the window should flash and decremented per tick.
          */
         uint8_t flashTimer{};
-        ScrollArea scrolls[4];
+        ScrollArea scrolls[kMaxScrollAreas];
         uint16_t numListItems{};    // 0 for no items
         int16_t selectedListItem{}; // -1 for none selected
         std::optional<Focus> focus;

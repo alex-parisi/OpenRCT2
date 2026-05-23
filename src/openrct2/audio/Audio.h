@@ -226,6 +226,8 @@ namespace OpenRCT2::Audio
      * @param volume The volume at which the sound effect should be played.
      * @param pan The pan at which the sound effect should be played. If set to anything other than kAudioPlayAtCentre, plays
      * the sound at a position relative to the centre of the viewport.
+     * @param group The mixer group to route the channel through. Use a non-default group only for fire-and-forget plays;
+     * if you need to mutate the channel later, call CreateAudioChannel directly and SetGroup on the returned channel.
      */
     void Play(SoundId soundId, int32_t volume, int32_t pan, MixerGroup group = MixerGroup::Sound);
 
@@ -233,6 +235,8 @@ namespace OpenRCT2::Audio
      * Plays the specified sound at a virtual location.
      * @param soundId The sound effect to play.
      * @param loc The coordinates of the location.
+     * @param group The mixer group to route the channel through. Use a non-default group only for fire-and-forget plays;
+     * if you need to mutate the channel later, call CreateAudioChannel directly and SetGroup on the returned channel.
      */
     void Play3D(SoundId soundId, const CoordsXYZ& loc, MixerGroup group = MixerGroup::Sound);
 
