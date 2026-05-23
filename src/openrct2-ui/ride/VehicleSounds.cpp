@@ -484,7 +484,8 @@ namespace OpenRCT2::Audio
     }
 
     template<SoundType type>
-    static void UpdateSound(const SoundId id, int32_t volume, VehicleSoundParams* sound_params, Sound& sound, uint8_t panVol)
+    static void UpdateSound(
+        const SoundId id, MixerGroup group, int32_t volume, VehicleSoundParams* sound_params, Sound& sound, uint8_t panVol)
     {
         volume *= panVol;
         volume = volume / 8;
@@ -514,8 +515,7 @@ namespace OpenRCT2::Audio
                 id, looping, DStoMixerVolume(volume), DStoMixerPan(pan), DStoMixerRate(frequency), false);
             if (channel != nullptr)
             {
-                if (IsRiderScreamSound(id))
-                    channel->SetGroup(MixerGroup::Peep);
+                channel->SetGroup(group);
                 sound.id = id;
                 sound.pan = sound_params->panX;
                 sound.volume = volume;
@@ -628,9 +628,12 @@ namespace OpenRCT2::Audio
             if (vehicle != nullptr)
             {
                 UpdateSound<SoundType::TrackNoises>(
-                    vehicle->sound1_id, vehicle->sound1_volume, &vehicleSoundParams, vehicleSound->trackSound, panVol);
+                    vehicle->sound1_id, MixerGroup::Sound, vehicle->sound1_volume, &vehicleSoundParams,
+                    vehicleSound->trackSound, panVol);
+                const auto sound2Group = IsRiderScreamSound(vehicle->sound2_id) ? MixerGroup::Peep : MixerGroup::Sound;
                 UpdateSound<SoundType::OtherNoises>(
-                    vehicle->sound2_id, vehicle->sound2_volume, &vehicleSoundParams, vehicleSound->otherSound, panVol);
+                    vehicle->sound2_id, sound2Group, vehicle->sound2_volume, &vehicleSoundParams, vehicleSound->otherSound,
+                    panVol);
             }
         }
     }
