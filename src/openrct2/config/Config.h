@@ -159,6 +159,8 @@ namespace OpenRCT2::Config
         TitleMusicKind titleMusic;
         bool soundEnabled;
         uint8_t soundVolume;
+        bool peepEnabled;
+        uint8_t peepVolume;
         bool rideMusicEnabled;
         uint8_t rideMusicVolume;
         bool audioFocus;

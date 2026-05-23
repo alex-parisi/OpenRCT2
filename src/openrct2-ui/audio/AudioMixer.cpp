@@ -146,8 +146,9 @@ void AudioMixer::GetNextAudioChunk(uint8_t* dst, size_t length)
         else
         {
             auto group = channel->GetGroup();
-            if ((group != MixerGroup::Sound || Config::Get().sound.soundEnabled) && Config::Get().sound.masterSoundEnabled
-                && Config::Get().sound.masterVolume != 0)
+            const bool groupEnabled = (group != MixerGroup::Sound || Config::Get().sound.soundEnabled)
+                && (group != MixerGroup::Peep || Config::Get().sound.peepEnabled);
+            if (groupEnabled && Config::Get().sound.masterSoundEnabled && Config::Get().sound.masterVolume != 0)
             {
                 MixChannel(channel.get(), dst, length);
             }
@@ -169,6 +170,11 @@ void AudioMixer::UpdateAdjustedSound()
     {
         _settingMusicVolume = Config::Get().sound.rideMusicVolume;
         _adjustMusicVolume = powf(static_cast<float>(_settingMusicVolume) / 100.f, 10.f / 6.f);
+    }
+    if (_settingPeepVolume != Config::Get().sound.peepVolume)
+    {
+        _settingPeepVolume = Config::Get().sound.peepVolume;
+        _adjustPeepVolume = powf(static_cast<float>(_settingPeepVolume) / 100.f, 10.f / 6.f);
     }
 }
 
@@ -348,6 +354,14 @@ int32_t AudioMixer::ApplyVolume(const IAudioChannel* channel, void* buffer, size
         case MixerGroup::RideMusic:
         case MixerGroup::TitleMusic:
             volumeAdjust *= _adjustMusicVolume;
+            break;
+        case MixerGroup::Peep:
+            volumeAdjust *= _adjustPeepVolume;
+            // Cap peep audio on title screen so music is more audible
+            if (gLegacyScene == LegacyScene::titleSequence)
+            {
+                volumeAdjust = std::min(volumeAdjust, 0.75f);
+            }
             break;
     }
 

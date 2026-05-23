@@ -227,14 +227,14 @@ namespace OpenRCT2::Audio
      * @param pan The pan at which the sound effect should be played. If set to anything other than kAudioPlayAtCentre, plays
      * the sound at a position relative to the centre of the viewport.
      */
-    void Play(SoundId soundId, int32_t volume, int32_t pan);
+    void Play(SoundId soundId, int32_t volume, int32_t pan, MixerGroup group = MixerGroup::Sound);
 
     /**
      * Plays the specified sound at a virtual location.
      * @param soundId The sound effect to play.
      * @param loc The coordinates of the location.
      */
-    void Play3D(SoundId soundId, const CoordsXYZ& loc);
+    void Play3D(SoundId soundId, const CoordsXYZ& loc, MixerGroup group = MixerGroup::Sound);
 
     /**
      * Populates the gAudioDevices array with the available audio devices.

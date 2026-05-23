@@ -178,6 +178,8 @@ namespace OpenRCT2::Ui::Windows
         WIDX_MASTER_VOLUME,
         WIDX_SOUND_VOLUME,
         WIDX_MUSIC_VOLUME,
+        WIDX_PEEP_CHECKBOX,
+        WIDX_PEEP_VOLUME,
 
         // Interface
         WIDX_THEMES_GROUP = WIDX_PAGE_START,
@@ -364,7 +366,9 @@ namespace OpenRCT2::Ui::Windows
         makeWidget({288, 130}, { 11, 12}, WidgetType::button,       WindowColour::secondary, STR_DROPDOWN_GLYPH,      STR_TITLE_MUSIC_TIP  ),
         makeWidget({155,  72}, {145, 13}, WidgetType::scroll,       WindowColour::secondary, SCROLL_HORIZONTAL                             ), // Master volume
         makeWidget({155,  87}, {145, 13}, WidgetType::scroll,       WindowColour::secondary, SCROLL_HORIZONTAL                             ), // Sound effect volume
-        makeWidget({155, 102}, {145, 13}, WidgetType::scroll,       WindowColour::secondary, SCROLL_HORIZONTAL                             )  // Music volume
+        makeWidget({155, 102}, {145, 13}, WidgetType::scroll,       WindowColour::secondary, SCROLL_HORIZONTAL                             ), // Music volume
+        makeWidget({ 10, 146}, {220, 12}, WidgetType::checkbox,     WindowColour::secondary, STR_PEEP_VOLUME,         STR_PEEP_VOLUME_TIP  ), // Enable / disable peep audio
+        makeWidget({155, 147}, {145, 13}, WidgetType::scroll,       WindowColour::secondary, SCROLL_HORIZONTAL                             )  // Peep volume
     );
 
     constexpr int32_t kControlsGroupStart = 53;
@@ -1407,6 +1411,12 @@ namespace OpenRCT2::Ui::Windows
                     invalidate();
                     break;
 
+                case WIDX_PEEP_CHECKBOX:
+                    Config::Get().sound.peepEnabled = !Config::Get().sound.peepEnabled;
+                    Config::Save();
+                    invalidate();
+                    break;
+
                 case WIDX_AUDIO_FOCUS_CHECKBOX:
                     Config::Get().sound.audioFocus = !Config::Get().sound.audioFocus;
                     Config::Save();
@@ -1518,7 +1528,7 @@ namespace OpenRCT2::Ui::Windows
                 invalidateWidget(WIDX_MASTER_VOLUME);
             }
 
-            const auto& soundVolumeWidget = widgets[WIDX_MASTER_VOLUME];
+            const auto& soundVolumeWidget = widgets[WIDX_SOUND_VOLUME];
             const auto& soundVolumeScroll = scrolls[1];
             uint8_t soundVolume = GetScrollPercentage(soundVolumeWidget, soundVolumeScroll);
             if (soundVolume != Config::Get().sound.soundVolume)
@@ -1528,7 +1538,7 @@ namespace OpenRCT2::Ui::Windows
                 invalidateWidget(WIDX_SOUND_VOLUME);
             }
 
-            const auto& musicVolumeWidget = widgets[WIDX_MASTER_VOLUME];
+            const auto& musicVolumeWidget = widgets[WIDX_MUSIC_VOLUME];
             const auto& musicVolumeScroll = scrolls[2];
             uint8_t rideMusicVolume = GetScrollPercentage(musicVolumeWidget, musicVolumeScroll);
             if (rideMusicVolume != Config::Get().sound.rideMusicVolume)
@@ -1536,6 +1546,16 @@ namespace OpenRCT2::Ui::Windows
                 Config::Get().sound.rideMusicVolume = rideMusicVolume;
                 Config::Save();
                 invalidateWidget(WIDX_MUSIC_VOLUME);
+            }
+
+            const auto& peepVolumeWidget = widgets[WIDX_PEEP_VOLUME];
+            const auto& peepVolumeScroll = scrolls[3];
+            uint8_t peepVolume = GetScrollPercentage(peepVolumeWidget, peepVolumeScroll);
+            if (peepVolume != Config::Get().sound.peepVolume)
+            {
+                Config::Get().sound.peepVolume = peepVolume;
+                Config::Save();
+                invalidateWidget(WIDX_PEEP_VOLUME);
             }
         }
 
@@ -1612,9 +1632,11 @@ namespace OpenRCT2::Ui::Windows
             setCheckboxValue(WIDX_SOUND_CHECKBOX, Config::Get().sound.soundEnabled);
             setCheckboxValue(WIDX_MASTER_SOUND_CHECKBOX, Config::Get().sound.masterSoundEnabled);
             setCheckboxValue(WIDX_MUSIC_CHECKBOX, Config::Get().sound.rideMusicEnabled);
+            setCheckboxValue(WIDX_PEEP_CHECKBOX, Config::Get().sound.peepEnabled);
             setCheckboxValue(WIDX_AUDIO_FOCUS_CHECKBOX, Config::Get().sound.audioFocus);
             widgetSetEnabled(*this, WIDX_SOUND_CHECKBOX, Config::Get().sound.masterSoundEnabled);
             widgetSetEnabled(*this, WIDX_MUSIC_CHECKBOX, Config::Get().sound.masterSoundEnabled);
+            widgetSetEnabled(*this, WIDX_PEEP_CHECKBOX, Config::Get().sound.masterSoundEnabled);
 
             // Initialize only on first frame, otherwise the scrollbars won't be able to be modified
             if (currentFrame == 0)
@@ -1622,6 +1644,7 @@ namespace OpenRCT2::Ui::Windows
                 initialiseScrollPosition(WIDX_MASTER_VOLUME, 0, Config::Get().sound.masterVolume);
                 initialiseScrollPosition(WIDX_SOUND_VOLUME, 1, Config::Get().sound.soundVolume);
                 initialiseScrollPosition(WIDX_MUSIC_VOLUME, 2, Config::Get().sound.rideMusicVolume);
+                initialiseScrollPosition(WIDX_PEEP_VOLUME, 3, Config::Get().sound.peepVolume);
             }
         }
 
