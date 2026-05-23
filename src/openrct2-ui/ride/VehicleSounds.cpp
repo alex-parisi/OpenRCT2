@@ -399,7 +399,7 @@ namespace OpenRCT2::Audio
         }
     }
 
-    static bool IsFixedFrequencySound(SoundId id)
+    static bool IsRiderScreamSound(SoundId id)
     {
         switch (id)
         {
@@ -411,6 +411,18 @@ namespace OpenRCT2::Audio
             case SoundId::scream6:
             case SoundId::scream7:
             case SoundId::scream8:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    static bool IsFixedFrequencySound(SoundId id)
+    {
+        if (IsRiderScreamSound(id))
+            return true;
+        switch (id)
+        {
             case SoundId::trainWhistle:
             case SoundId::trainDeparting:
             case SoundId::tram:
@@ -463,24 +475,6 @@ namespace OpenRCT2::Audio
     static bool ShouldUpdateChannelRate(const SoundId id)
     {
         return type == SoundType::TrackNoises || !IsFixedFrequencySound(id);
-    }
-
-    static bool IsRiderScreamSound(SoundId id)
-    {
-        switch (id)
-        {
-            case SoundId::scream1:
-            case SoundId::scream2:
-            case SoundId::scream3:
-            case SoundId::scream4:
-            case SoundId::scream5:
-            case SoundId::scream6:
-            case SoundId::scream7:
-            case SoundId::scream8:
-                return true;
-            default:
-                return false;
-        }
     }
 
     template<SoundType type>
