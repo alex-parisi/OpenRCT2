@@ -465,6 +465,24 @@ namespace OpenRCT2::Audio
         return type == SoundType::TrackNoises || !IsFixedFrequencySound(id);
     }
 
+    static bool IsRiderScreamSound(SoundId id)
+    {
+        switch (id)
+        {
+            case SoundId::scream1:
+            case SoundId::scream2:
+            case SoundId::scream3:
+            case SoundId::scream4:
+            case SoundId::scream5:
+            case SoundId::scream6:
+            case SoundId::scream7:
+            case SoundId::scream8:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     template<SoundType type>
     static void UpdateSound(const SoundId id, int32_t volume, VehicleSoundParams* sound_params, Sound& sound, uint8_t panVol)
     {
@@ -496,6 +514,8 @@ namespace OpenRCT2::Audio
                 id, looping, DStoMixerVolume(volume), DStoMixerPan(pan), DStoMixerRate(frequency), false);
             if (channel != nullptr)
             {
+                if (IsRiderScreamSound(id))
+                    channel->SetGroup(MixerGroup::Peep);
                 sound.id = id;
                 sound.pan = sound_params->panX;
                 sound.volume = volume;
