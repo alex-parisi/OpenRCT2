@@ -189,6 +189,10 @@ namespace OpenRCT2
 
                     // Play long peep scream sound
                     _soundChannel = Audio::CreateAudioChannel(SoundId::scream1);
+                    if (_soundChannel != nullptr)
+                    {
+                        _soundChannel->SetGroup(Audio::MixerGroup::Peep);
+                    }
 
                     _introState = IntroState::LogoFadeIn;
                     _introStateCounter = 0;
