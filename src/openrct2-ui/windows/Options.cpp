@@ -171,6 +171,7 @@ namespace OpenRCT2::Ui::Windows
         WIDX_MASTER_SOUND_CHECKBOX,
         WIDX_SOUND_CHECKBOX,
         WIDX_MUSIC_CHECKBOX,
+        WIDX_PEEP_CHECKBOX,
         WIDX_AUDIO_FOCUS_CHECKBOX,
         WIDX_TITLE_MUSIC_LABEL,
         WIDX_TITLE_MUSIC,
@@ -178,7 +179,6 @@ namespace OpenRCT2::Ui::Windows
         WIDX_MASTER_VOLUME,
         WIDX_SOUND_VOLUME,
         WIDX_MUSIC_VOLUME,
-        WIDX_PEEP_CHECKBOX,
         WIDX_PEEP_VOLUME,
 
         // Interface
@@ -360,15 +360,15 @@ namespace OpenRCT2::Ui::Windows
         makeWidget({ 10,  71}, {220, 12}, WidgetType::checkbox,     WindowColour::secondary, STR_MASTER_VOLUME,       STR_MASTER_VOLUME_TIP), // Enable / disable master sound
         makeWidget({ 10,  86}, {220, 12}, WidgetType::checkbox,     WindowColour::secondary, STR_SOUND_EFFECTS,       STR_SOUND_EFFECTS_TIP), // Enable / disable sound effects
         makeWidget({ 10, 101}, {220, 12}, WidgetType::checkbox,     WindowColour::secondary, STR_RIDE_MUSIC,          STR_RIDE_MUSIC_TIP   ), // Enable / disable ride music
-        makeWidget({ 10, 115}, {290, 13}, WidgetType::checkbox,     WindowColour::secondary, STR_AUDIO_FOCUS,         STR_AUDIO_FOCUS_TIP  ), // Enable / disable audio disabled on focus lost
-        makeWidget({ 10, 130}, {145, 12}, WidgetType::label,        WindowColour::secondary, STR_OPTIONS_MUSIC_LABEL, STR_TITLE_MUSIC_TIP  ), // Title music label
-        makeWidget({155, 129}, {145, 14}, WidgetType::dropdownMenu, WindowColour::secondary                                                ), // Title music
-        makeWidget({288, 130}, { 11, 12}, WidgetType::button,       WindowColour::secondary, STR_DROPDOWN_GLYPH,      STR_TITLE_MUSIC_TIP  ),
+        makeWidget({ 10, 116}, {220, 12}, WidgetType::checkbox,     WindowColour::secondary, STR_PEEP_VOLUME,         STR_PEEP_VOLUME_TIP  ), // Enable / disable peep audio
+        makeWidget({ 10, 131}, {290, 13}, WidgetType::checkbox,     WindowColour::secondary, STR_AUDIO_FOCUS,         STR_AUDIO_FOCUS_TIP  ), // Enable / disable audio disabled on focus lost
+        makeWidget({ 10, 146}, {145, 12}, WidgetType::label,        WindowColour::secondary, STR_OPTIONS_MUSIC_LABEL, STR_TITLE_MUSIC_TIP  ), // Title music label
+        makeWidget({155, 145}, {145, 14}, WidgetType::dropdownMenu, WindowColour::secondary                                                ), // Title music
+        makeWidget({288, 146}, { 11, 12}, WidgetType::button,       WindowColour::secondary, STR_DROPDOWN_GLYPH,      STR_TITLE_MUSIC_TIP  ),
         makeWidget({155,  72}, {145, 13}, WidgetType::scroll,       WindowColour::secondary, SCROLL_HORIZONTAL                             ), // Master volume
         makeWidget({155,  87}, {145, 13}, WidgetType::scroll,       WindowColour::secondary, SCROLL_HORIZONTAL                             ), // Sound effect volume
         makeWidget({155, 102}, {145, 13}, WidgetType::scroll,       WindowColour::secondary, SCROLL_HORIZONTAL                             ), // Music volume
-        makeWidget({ 10, 146}, {220, 12}, WidgetType::checkbox,     WindowColour::secondary, STR_PEEP_VOLUME,         STR_PEEP_VOLUME_TIP  ), // Enable / disable peep audio
-        makeWidget({155, 147}, {145, 13}, WidgetType::scroll,       WindowColour::secondary, SCROLL_HORIZONTAL                             )  // Peep volume
+        makeWidget({155, 117}, {145, 13}, WidgetType::scroll,       WindowColour::secondary, SCROLL_HORIZONTAL                             )  // Peep volume
     );
 
     constexpr int32_t kControlsGroupStart = 53;
