@@ -340,16 +340,12 @@ int32_t AudioMixer::ApplyVolume(const IAudioChannel* channel, void* buffer, size
     volumeAdjust *= Config::Get().sound.masterSoundEnabled ? (static_cast<float>(Config::Get().sound.masterVolume) / 100.0f)
                                                            : 0.0f;
 
+    bool capVolume = false;
     switch (channel->GetGroup())
     {
         case MixerGroup::Sound:
             volumeAdjust *= _adjustSoundVolume;
-
-            // Cap sound volume on title screen so music is more audible
-            if (gLegacyScene == LegacyScene::titleSequence)
-            {
-                volumeAdjust = std::min(volumeAdjust, 0.75f);
-            }
+            capVolume = true;
             break;
         case MixerGroup::RideMusic:
         case MixerGroup::TitleMusic:
@@ -357,13 +353,13 @@ int32_t AudioMixer::ApplyVolume(const IAudioChannel* channel, void* buffer, size
             break;
         case MixerGroup::Peep:
             volumeAdjust *= _adjustPeepVolume;
-            // Cap peep audio on title screen so music is more audible
-            if (gLegacyScene == LegacyScene::titleSequence)
-            {
-                volumeAdjust = std::min(volumeAdjust, 0.75f);
-            }
+            capVolume = true;
             break;
     }
+
+    // Cap sound and peep audio on title screen so music is more audible
+    if (capVolume && gLegacyScene == LegacyScene::titleSequence)
+        volumeAdjust = std::min(volumeAdjust, 0.75f);
 
     int32_t startVolume = channel->GetOldVolume() * volumeAdjust;
     int32_t endVolume = channel->GetVolume() * volumeAdjust;
